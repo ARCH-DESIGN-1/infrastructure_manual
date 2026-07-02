@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>4. IAM & Policies — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item active">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <div class="badge">Phase 4</div>
+      <h1>IAM Dynamic Groups & Policies Setup</h1>
+      <p class="lead">Configures the compartment security policies to assign access dynamically using Resource Principals.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Step 6 — Establish Access Control Policies</h2>
+      <p>Configure dynamic resource groupings to bind least-privilege security policy definitions directly to runtimes.</p>
+
+      <div class="workflow-steps">
+
+        <!-- STEP 6.1 -->
+        <div class="workflow-card" id="step-6-1">
+          <div class="workflow-badge">STEP 6.1</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Identity & Security</span>
+                <span class="crumb">Dynamic Groups</span>
+                <span class="crumb active">Create Dynamic Group</span>
+              </div>
+            </div>
+            <p class="step-instruction">Group compartment serverless functions and database instances dynamically using rules.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
+              <div class="field-item">
+                <span class="field-label">Group 1: Serverless Functions Dynamic Group</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Name: sod-functions-dg | Matching Rule: ALL {resource.type = 'fnfunc', resource.compartment.id = '&lt;compartment_ocid&gt;'}</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Group 2: Autonomous Database Dynamic Group</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Name: sod-adb-dg | Matching Rule: ALL {resource.type = 'autonomousdatabase', resource.compartment.id = '&lt;compartment_ocid&gt;'}</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 6.2 -->
+        <div class="workflow-card" id="step-6-2">
+          <div class="workflow-badge">STEP 6.2</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Identity & Security</span>
+                <span class="crumb">Policies</span>
+                <span class="crumb active">Create Policy</span>
+              </div>
+            </div>
+            <p class="step-instruction">Create access control policies allowing Dynamic Groups to invoke compartment resources securely.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
+              <div class="field-item">
+                <span class="field-label">Policy 1: sod-functions-policy Statements</span>
+                <div class="value-wrap" style="align-items: flex-start;">
+                  <span class="field-value copy-target" style="font-size: 11.5px; line-height: 1.5; display: block;">Allow dynamic-group sod-functions-dg to read secret-bundles in compartment id &lt;compartment_id&gt;
+Allow dynamic-group sod-functions-dg to manage objects in compartment id &lt;compartment_id&gt;
+Allow dynamic-group sod-functions-dg to use queues in compartment id &lt;compartment_id&gt;
+Allow service cloudevents to use functions-family in compartment id &lt;compartment_id&gt;
+Allow any-user to use functions-family in compartment id &lt;compartment_id&gt; where request.principal.type = 'apigateway'</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Policy 2: sod-adb-policy Statements</span>
+                <div class="value-wrap" style="align-items: flex-start;">
+                  <span class="field-value copy-target" style="font-size: 11.5px; line-height: 1.5; display: block;">Allow dynamic-group sod-adb-dg to read objects in compartment id &lt;compartment_id&gt;
+Allow dynamic-group sod-adb-dg to use queues in compartment id &lt;compartment_id&gt;</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="callout accent">
+        <div class="callout-title">Why We Do It</div>
+        <p>Assigning policies to dynamic groups allows functions and database runtimes to communicate securely using OCI Resource Principals, bypassing the need to generate, store, and rotate static API access keys.</p>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

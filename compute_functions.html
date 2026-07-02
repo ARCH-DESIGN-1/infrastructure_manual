@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5. OCIR & Functions — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item active">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <div class="badge">Phase 5</div>
+      <h1>Private Registry & Serverless Functions Setup</h1>
+      <p class="lead">Configures container registry parameters and deploys the private serverless execution application.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Serverless Deployment Parameters</h2>
+      <p>Identify individual function properties and memory profiles before push execution:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Function Name</th>
+              <th>Memory (MB)</th>
+              <th>Timeout (s)</th>
+              <th>Container Image Target Path</th>
+              <th>Design Rationale & Explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="clickable-row" onclick="window.location='code_api_receiver.html'">
+              <td><strong>sod-api-receiver</strong></td>
+              <td>`256`</td>
+              <td>`60`</td>
+              <td>`ap-mumbai-1.ocir.io/<namespace>/sod-repo/sod-api-receiver:1.0.0`</td>
+              <td>Handles public API ingestion. Validates JWT security headers and schema bounds, returns a run ID immediately.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='code_enqueuer.html'">
+              <td><strong>sod-enqueuer</strong></td>
+              <td>`128`</td>
+              <td>`60`</td>
+              <td>`ap-mumbai-1.ocir.io/<namespace>/sod-repo/sod-enqueuer:1.0.0`</td>
+              <td>Enqueues storage event file metadata onto the ingestion queue. Requires low footprint and executes quickly.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='code_processor.html'">
+              <td><strong>sod-processor</strong></td>
+              <td>`256`</td>
+              <td>`300`</td>
+              <td>`ap-mumbai-1.ocir.io/<namespace>/sod-repo/sod-processor:1.0.0`</td>
+              <td>Parses raw CSV/JSON logs and populates staging database rows. 300s window allows parsing of multi-megabyte audit files.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='code_manual_trigger.html'">
+              <td><strong>sod-manual-trigger</strong></td>
+              <td>`256`</td>
+              <td>`30`</td>
+              <td>`ap-mumbai-1.ocir.io/<namespace>/sod-repo/sod-manual-trigger:1.0.0`</td>
+              <td>Enables on-demand ad-hoc triggers of specific HCM enterprise connectors via API request paths.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='code_connector_processor.html'">
+              <td><strong>sod-connector-processor</strong></td>
+              <td>`256`</td>
+              <td>`600`</td>
+              <td>`ap-mumbai-1.ocir.io/<namespace>/sod-repo/sod-connector-processor:1.0.0`</td>
+              <td>Polls external HCM targets (e.g. Workday, Oracle HCM REST) and dumps logs to landing buckets. Long timeout handles large remote datasets.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='code_run_status.html'">
+              <td><strong>sod-run-status</strong></td>
+              <td>`256`</td>
+              <td>`30`</td>
+              <td>`ap-mumbai-1.ocir.io/<namespace>/sod-repo/sod-run-status:1.0.0`</td>
+              <td>Serves GET status updates. Reads active run metadata indexes to track processing stages and violations.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='code_list_connectors.html'">
+              <td><strong>sod-list-connectors</strong></td>
+              <td>`256`</td>
+              <td>`30`</td>
+              <td>`ap-mumbai-1.ocir.io/<namespace>/sod-repo/sod-list-connectors:1.0.0`</td>
+              <td>Lists active HCM target connectors defined inside the SQL database lookup metadata schemas.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Step 7 — Deploy Containerized Functions</h2>
+      <p>Configure private docker registry storage and deploy serverless functions matching regional limits.</p>
+
+      <div class="workflow-steps">
+
+        <!-- STEP 7.1 -->
+        <div class="workflow-card" id="step-7-1">
+          <div class="workflow-badge">STEP 7.1</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Developer Services</span>
+                <span class="crumb">Container Registry</span>
+                <span class="crumb active">Create Repository</span>
+              </div>
+            </div>
+            <p class="step-instruction">Provision a secure repository folder inside the Oracle Cloud Infrastructure Registry (OCIR).</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Repository Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-repo</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Access Type</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Private</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 7.2 -->
+        <div class="workflow-card" id="step-7-2">
+          <div class="workflow-badge">STEP 7.2</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Local Terminal</span>
+                <span class="crumb">Docker CLI</span>
+                <span class="crumb active">Build & Push</span>
+              </div>
+            </div>
+            <p class="step-instruction">Log in to the regional OCIR endpoint and push tag-matched docker worker images.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
+              <div class="field-item">
+                <span class="field-label">Docker Login Registry command</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">docker login &lt;region-key&gt;.ocir.io</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">OCI Destination Registry Tag format</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">&lt;region-key&gt;.ocir.io/&lt;tenancy-namespace&gt;/sod-repo/&lt;fn-name&gt;:1.0.0</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 7.3 -->
+        <div class="workflow-card" id="step-7-3">
+          <div class="workflow-badge">STEP 7.3</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Developer Services</span>
+                <span class="crumb">Functions</span>
+                <span class="crumb active">Create Application</span>
+              </div>
+            </div>
+            <p class="step-instruction">Establish the core serverless container application boundary linked to the private database subnet.</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Application Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-app</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Network VCN Bind</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-network-vcn</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Subnet Bind</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-private-subnet</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 7.4 -->
+        <div class="workflow-card" id="step-7-4">
+          <div class="workflow-badge">STEP 7.4</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">sod-app Details</span>
+                <span class="crumb">Functions List</span>
+                <span class="crumb active">Create Function</span>
+              </div>
+            </div>
+            <p class="step-instruction">Map the individual function runtimes, matching memory profiles and timeouts exactly from the telemetry sheet.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
+              <div class="field-item">
+                <span class="field-label">Setup Guideline</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Provision all 7 functions matching names, memory allocations, and Docker tags.</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">Why We Do It</div>
+        <p>Deploying OCI Functions inside the private subnet ensures they can access the database directly via internal endpoints and query OCI services securely over NAT and Service Gateways.</p>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

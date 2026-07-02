@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sod-enqueuer Source Code — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item active">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <a href="compute_functions.html" class="back-link">➔ Back to Functions List</a>
+      <div class="badge">sod-enqueuer</div>
+      <h1>sod-enqueuer Codebase</h1>
+      <p class="lead">Contains all configuration and runtime codes for the event enqueuer microservice.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Files in <code class="inline-code">sod-platform/functions/sod-enqueuer/</code></h2>
+      <p>Select a file to inspect its source content:</p>
+      
+      <div class="code-navigator">
+        <div class="tab-list">
+          <button class="tab-btn active" onclick="switchTab(event, 'file-py')">func.py</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-docker')">Dockerfile</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-yaml')">func.yaml</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-reqs')">requirements.txt</button>
+          <button class="download-code-btn" onclick="downloadActiveFile(this)">Download Active File</button>
+        </div>
+        
+        <!-- func.py -->
+        <div id="file-py" class="tab-content active">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">func.py</span>
+              <span class="code-lang">python</span>
+            </div>
+            <pre><code><span class="kw">import</span> io
+<span class="kw">import</span> json
+<span class="kw">import</span> logging
+<span class="kw">import</span> os
+<span class="kw">import</span> oci
+<span class="kw">from</span> fdk <span class="kw">import</span> response
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+QUEUE_OCID = os.environ.get(<span class="str">"INGESTION_QUEUE_OCID"</span>)
+QUEUE_ENDPOINT = os.environ.get(<span class="str">"QUEUE_ENDPOINT"</span>)
+
+<span class="kw">def</span> <span class="fn">handler</span>(ctx, data: io.BytesIO = <span class="kw">None</span>):
+    <span class="kw">try</span>:
+        # Parse OCI Event JSON
+        event = json.loads(data.getvalue())
+        logger.info(f<span class="str">"Received event: {json.dumps(event)}"</span>)
+        
+        event_type = event.get(<span class="str">"eventType"</span>)
+        <span class="kw">if</span> event_type != <span class="str">"com.oraclecloud.objectstorage.createobject"</span>:
+            <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">400</span>, response_data=<span class="str">"Unsupported event type"</span>)
+
+        event_data = event.get(<span class="str">"data"</span>, {})
+        object_name = event_data.get(<span class="str">"resourceName"</span>)
+        bucket_name = event_data.get(<span class="str">"additionalDetails"</span>, {}).get(<span class="str">"bucketName"</span>)
+        namespace = event_data.get(<span class="str">"additionalDetails"</span>, {}).get(<span class="str">"namespace"</span>)
+        
+        # Extract file type
+        ext = object_name.split(<span class="str">"."</span>)[-<span class="num">1</span>].upper()
+        <span class="kw">if</span> ext <span class="kw">not in</span> (<span class="str">"CSV"</span>, <span class="str">"JSON"</span>, <span class="str">"XML"</span>):
+            logger.warning(f<span class="str">"Unsupported file extension: {ext}"</span>)
+            <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">400</span>, response_data=f<span class="str">"Unsupported extension: {ext}"</span>)
+
+        # Enqueue to OCI Queue
+        payload = json.dumps({
+            <span class="str">"namespace"</span>: namespace,
+            <span class="str">"bucket"</span>: bucket_name,
+            <span class="str">"objectName"</span>: object_name,
+            <span class="str">"fileType"</span>: ext
+        })
+
+        signer = oci.auth.signers.get_resource_principals_signer()
+        qc = oci.queue.QueueClient(config={}, service_endpoint=QUEUE_ENDPOINT, signer=signer)
+        qc.put_messages(
+            queue_id=QUEUE_OCID,
+            put_messages_details=oci.queue.models.PutMessagesDetails(
+                messages=[oci.queue.models.PutMessagesDetailsEntry(content=payload)]
+            )
+        )
+        
+        logger.info(f<span class="str">"Enqueued object {object_name} to queue"</span>)
+        <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">200</span>, response_data=<span class="str">"Event enqueued successfully"</span>)
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        logger.error(f<span class="str">"Enqueuer error: {str(e)}"</span>)
+        <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">500</span>, response_data=<span class="fn">str</span>(e))
+</code></pre>
+          </div>
+        </div>
+        
+        <!-- Dockerfile -->
+        <div id="file-docker" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">Dockerfile</span>
+              <span class="code-lang">dockerfile</span>
+            </div>
+            <pre><code># Dockerfile
+# Hardened Multi-Stage Build complying with OCI Functions security specifications
+
+# Build Stage: Pinned dependency container
+FROM fnproject/python:3.11-dep AS build-stage
+WORKDIR /function
+ADD requirements.txt /function/
+RUN /python/bin/pip install --target /python/site-packages -r requirements.txt
+
+# Final Stage: Lean execution container
+FROM fnproject/python:3.11
+WORKDIR /function
+COPY --from=build-stage /python /python
+ADD . /function/
+
+# Hardened non-root security compliance
+RUN groupadd -r fnuser && useradd -r -g fnuser fnuser
+RUN chown -R fnuser:fnuser /function /python
+USER fnuser
+
+ENTRYPOINT ["/python/bin/fdk", "func.py", "handler"]
+</code></pre>
+          </div>
+        </div>
+        
+        <!-- func.yaml -->
+        <div id="file-yaml" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">func.yaml</span>
+              <span class="code-lang">yaml</span>
+            </div>
+            <pre><code>schema_version: 20180708
+name: sod-enqueuer
+version: 1.0.0
+runtime: python3.11
+entrypoint: func.handler
+memory: 128
+timeout: 60
+</code></pre>
+          </div>
+        </div>
+        
+        <!-- requirements.txt -->
+        <div id="file-reqs" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">requirements.txt</span>
+              <span class="code-lang">plaintext</span>
+            </div>
+            <pre><code>fdk
+oci
+</code></pre>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

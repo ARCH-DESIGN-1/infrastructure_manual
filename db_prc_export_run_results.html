@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>prc_export_run_results SQL — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item active">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <a href="codebase_plsql.html" class="back-link">➔ Back to Database Catalog</a>
+      <div class="badge">prc_export_run_results</div>
+      <h1>prc_export_run_results Stored Procedure</h1>
+      <p class="lead">Aggregates latest findings into JSON arrays and uploads the reports directly to OCI Object Storage.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Files in <code class="inline-code">sod-platform/database/Procedures/prc_export_run_results.sql</code></h2>
+      <p>Select a file to inspect its source content:</p>
+
+      <div class="code-navigator">
+        <div class="tab-list">
+          <button class="tab-btn active" onclick="switchTab(event, 'file-sql')">prc_export_run_results.sql</button>
+          <button class="download-code-btn" onclick="downloadActiveFile(this)">Download Active File</button>
+        </div>
+        
+        <!-- prc_export_run_results.sql -->
+        <div id="file-sql" class="tab-content active">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">prc_export_run_results.sql</span>
+              <span class="code-lang">sql</span>
+            </div>
+            <pre><code><span class="kw">CREATE OR REPLACE PROCEDURE</span> prc_export_run_results (
+    p_run_id   <span class="kw">IN VARCHAR2</span>,
+    p_use_case <span class="kw">IN VARCHAR2</span>
+) <span class="kw">AS</span>
+    v_export_path <span class="kw">VARCHAR2</span>(<span class="num">500</span>);
+    v_clob        <span class="typ">CLOB</span>;
+<span class="kw">BEGIN</span>
+    v_export_path := <span class="str">'reports/'</span> || p_use_case || <span class="str">'/'</span>
+                  || TO_CHAR(<span class="kw">SYSDATE</span>,<span class="str">'YYYY/MM/DD'</span>) || <span class="str">'/'</span>
+                  || p_run_id || <span class="str">'_results.json'</span>;
+
+    -- Build JSON from appropriate view
+    <span class="kw">SELECT</span> JSON_ARRAYAGG(
+        JSON_OBJECT(*) <span class="kw">RETURNING CLOB</span>
+    ) <span class="kw">INTO</span> v_clob
+    <span class="kw">FROM</span> (
+        <span class="kw">SELECT</span> * <span class="kw">FROM</span> v_violations_with_exceptions
+        <span class="kw">WHERE</span> run_date >= <span class="kw">SYSDATE</span> - <span class="num">1</span>   -- latest run
+    );
+
+    -- Write to Object Storage via Resource Principal
+    DBMS_CLOUD.PUT_OBJECT(
+        object_uri  => <span class="str">'https://objectstorage.ap-mumbai-1.oraclecloud.com/n/bmuwto4pxmhp/b/sod-reports/o/'</span>
+                    || UTL_URL.ESCAPE(v_export_path, <span class="kw">FALSE</span>),
+        contents    => UTL_RAW.CAST_TO_RAW(v_clob)
+    );
+<span class="kw">END</span>;
+/</code></pre>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sod-connector-processor Source Code — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item active">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <a href="compute_functions.html" class="back-link">➔ Back to Functions List</a>
+      <div class="badge">sod-connector-processor</div>
+      <h1>sod-connector-processor Codebase</h1>
+      <p class="lead">Contains all configuration, core drivers, registries, and connectors for the enterprise integration microservice.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Files in <code class="inline-code">sod-platform/functions/sod-connector-processor/</code></h2>
+      <p>Select a file to inspect its source content:</p>
+      
+      <div class="code-navigator">
+        <div class="tab-list">
+          <button class="tab-btn active" onclick="switchTab(event, 'file-py')">func.py</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-registry')">connector_registry.py</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-loader')">adb_loader.py</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-base')">connectors/connector_base.py</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-workday')">connectors/workday_hcm.py</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-fusion')">connectors/fusion_security_config.py</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-docker')">Dockerfile</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-yaml')">func.yaml</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-reqs')">requirements.txt</button>
+          <button class="download-code-btn" onclick="downloadActiveFile(this)">Download Active File</button>
+        </div>
+        
+        <!-- func.py -->
+        <div id="file-py" class="tab-content active">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">func.py</span>
+              <span class="code-lang">python</span>
+            </div>
+            <pre><code><span class="kw">import io, json, logging, os, uuid</span>
+<span class="kw">import oci</span>
+<span class="kw">from fdk import response</span>
+<span class="kw">from connector_registry import ConnectorRegistry</span>
+<span class="kw">from connector_base import ConnectorConfig</span>
+<span class="kw">from adb_loader import stream_to_adb</span>
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+QUEUE_OCID     = os.environ[<span class="str">"CONNECTOR_QUEUE_OCID"</span>]
+QUEUE_ENDPOINT = os.environ[<span class="str">"QUEUE_ENDPOINT"</span>]
+
+<span class="kw">def</span> <span class="fn">handler</span>(ctx, data: io.BytesIO = <span class="kw">None</span>):
+    signer = oci.auth.signers.get_resource_principals_signer()
+    qc     = oci.queue.QueueClient(config={}, service_endpoint=QUEUE_ENDPOINT, signer=signer)
+
+    # Long-poll: wait up to 30s for a message
+    msgs = qc.get_messages(
+        queue_id=QUEUE_OCID,
+        visibility_in_seconds=<span class="num">600</span>,  # 10 min to process + ACK
+        timeout_in_seconds=<span class="num">30</span>,
+        limit=<span class="num">1</span>
+    ).data.messages
+
+    <span class="kw">if</span> <span class="kw">not</span> msgs:
+        <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">200</span>,
+                         response_data=json.dumps({<span class="str">"status"</span>: <span class="str">"idle"</span>}))
+
+    msg     = msgs[<span class="num">0</span>]
+    receipt = msg.receipt
+    payload = json.loads(msg.content)
+
+    connector_id = payload[<span class="str">"connectorId"</span>]
+    run_id       = payload[<span class="str">"runId"</span>]
+    run_mode     = payload.get(<span class="str">"runMode"</span>, <span class="str">"INCREMENTAL"</span>)
+    triggered_by = payload.get(<span class="str">"triggeredBy"</span>, <span class="str">"SCHEDULER"</span>)
+
+    ConnectorRegistry.auto_discover()   # loads all /connectors/*.py
+
+    config = ConnectorConfig(
+        connector_id   = connector_id,
+        source_type    = payload.get(<span class="str">"sourceType"</span>, <span class="str">""</span>),
+        environment    = os.environ.get(<span class="str">"ENVIRONMENT"</span>, <span class="str">"PROD"</span>),
+        run_id         = run_id,
+        run_mode       = run_mode,
+        credential_ref = payload.get(<span class="str">"credentialRef"</span>, <span class="str">""</span>),
+        params         = payload.get(<span class="str">"params"</span>, {}),
+        watermark      = payload.get(<span class="str">"watermark"</span>)
+    )
+
+    connector = ConnectorRegistry.get(connector_id, config)
+
+    <span class="kw">try</span>:
+        connector.validate()
+        records_loaded = stream_to_adb(connector.extract())  # streams to ADB staging
+
+        # ✅ ACK — permanently removes message from queue
+        qc.delete_message(queue_id=QUEUE_OCID, message_receipt=receipt)
+
+        logger.info(json.dumps({
+            <span class="str">"event"</span>: <span class="str">"connector_success"</span>, <span class="str">"connectorId"</span>: connector_id,
+            <span class="str">"runId"</span>: run_id, <span class="str">"rows"</span>: records_loaded,
+            <span class="str">"triggeredBy"</span>: triggered_by
+        }))
+        <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">200</span>,
+                         response_data=json.dumps({<span class="str">"status"</span>: <span class="str">"success"</span>, <span class="str">"rows"</span>: records_loaded}))
+
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        logger.error(json.dumps({
+            <span class="str">"event"</span>: <span class="str">"connector_failure"</span>, <span class="str">"connectorId"</span>: connector_id,
+            <span class="str">"error"</span>: <span class="fn">str</span>(e), <span class="str">"retriesRemaining"</span>: <span class="num">3</span> - msg.delivery_count
+        }))
+        <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">500</span>,
+                         response_data=json.dumps({<span class="str">"status"</span>: <span class="str">"failed"</span>}))
+    <span class="kw">finally</span>:
+        connector.close()
+</code></pre>
+          </div>
+        </div>
+
+        <!-- connector_registry.py -->
+        <div id="file-registry" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">connector_registry.py</span>
+              <span class="code-lang">python</span>
+            </div>
+            <pre><code><span class="kw">import importlib</span>
+<span class="kw">import os</span>
+<span class="kw">import pkgutil</span>
+<span class="kw">import logging</span>
+
+logger = logging.getLogger(__name__)
+
+<span class="kw">class</span> <span class="class">ConnectorRegistry</span>:
+    _registry = {}
+
+    <span class="kw">@classmethod</span>
+    <span class="kw">def</span> <span class="fn">register</span>(cls, name):
+        <span class="kw">def</span> <span class="fn">decorator</span>(subclass):
+            cls._registry[name] = subclass
+            <span class="kw">return</span> subclass
+        <span class="kw">return</span> decorator
+
+    <span class="kw">@classmethod</span>
+    <span class="kw">def</span> <span class="fn">get</span>(cls, name):
+        cls._discover()
+        <span class="kw">if</span> name <span class="kw">not in</span> cls._registry:
+            <span class="kw">raise</span> KeyError(f<span class="str">"Connector '{name}' is not registered."</span>)
+        <span class="kw">return</span> cls._registry[name]
+
+    <span class="kw">@classmethod</span>
+    <span class="kw">def</span> <span class="fn">_discover</span>(cls):
+        pkg_dir = os.path.join(os.path.dirname(__file__), <span class="str">"connectors"</span>)
+        <span class="kw">for</span> _, module_name, _ <span class="kw">in</span> pkgutil.walk_packages([pkg_dir]):
+            importlib.import_module(f<span class="str">"connectors.{module_name}"</span>)
+</code></pre>
+          </div>
+        </div>
+
+        <!-- adb_loader.py -->
+        <div id="file-loader" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">adb_loader.py</span>
+              <span class="code-lang">python</span>
+            </div>
+            <pre><code><span class="kw">import oracledb</span>
+<span class="kw">import json</span>
+<span class="kw">import os</span>
+<span class="kw">import oci</span>
+<span class="kw">import base64</span>
+<span class="kw">import logging</span>
+
+logger = logging.getLogger(__name__)
+
+<span class="kw">def</span> <span class="fn">get_db_password</span>() -> str:
+    signer = oci.auth.signers.get_resource_principals_signer()
+    sc     = oci.secrets.SecretsClient(config={}, signer=signer)
+    bundle = sc.get_secret_bundle(secret_id=os.environ[<span class="str">"VAULT_SECRET_OCID"</span>])
+    <span class="kw">return</span> base64.b64decode(bundle.data.secret_bundle_content.content).decode(<span class="str">"utf-8"</span>)
+
+<span class="kw">def</span> <span class="fn">stream_to_adb</span>(records_iterator, connector_id, run_id):
+    password = get_db_password()
+    conn = oracledb.connect(
+        user=os.environ.get(<span class="str">"DB_USER"</span>, <span class="str">"sod_admin"</span>),
+        password=password,
+        dsn=os.environ.get(<span class="str">"DB_DSN"</span>)
+    )
+    cursor = conn.cursor()
+    
+    records_loaded = 0
+    records_extracted = 0
+    
+    batch = []
+    <span class="kw">for</span> record <span class="kw">in</span> records_iterator:
+        records_extracted += 1
+        batch.append([
+            run_id,
+            record.entity_type,
+            record.entity_key,
+            json.dumps(record.payload)
+        ])
+        
+        <span class="kw">if</span> <span class="fn">len</span>(batch) >= <span class="num">1000</span>:
+            cursor.executemany(
+                <span class="str">"INSERT INTO unified_landing_staging (file_name, file_type, status, error_detail) VALUES (:1, 'JSON', 'SUCCESS', :2)"</span>,
+                [[b[2], b[3]] <span class="kw">for</span> b <span class="kw">in</span> batch]
+            )
+            records_loaded += <span class="fn">len</span>(batch)
+            batch = []
+            
+    <span class="kw">if</span> batch:
+        cursor.executemany(
+            <span class="str">"INSERT INTO unified_landing_staging (file_name, file_type, status, error_detail) VALUES (:1, 'JSON', 'SUCCESS', :2)"</span>,
+            [[b[2], b[3]] <span class="kw">for</span> b <span class="kw">in</span> batch]
+        )
+        records_loaded += <span class="fn">len</span>(batch)
+
+    cursor.execute(
+        <span class="str">"""UPDATE sod_connector_registry
+           SET    last_watermark      = :1,
+                  last_successful_run = SYSTIMESTAMP
+           WHERE  connector_id = :2"""</span>,
+        [json.dumps({<span class="str">"watermark"</span>: <span class="str">"SUCCESS"</span>}), connector_id]
+    )
+    
+    cursor.execute(
+        <span class="str">"""UPDATE sod_connector_run_log
+           SET    status            = 'SUCCESS',
+                  records_extracted = :1,
+                  records_loaded    = :2,
+                  completed_at      = SYSTIMESTAMP
+           WHERE  run_id = :3"""</span>,
+        [records_extracted, records_loaded, run_id]
+    )
+    
+    conn.commit()
+    conn.close()
+    <span class="kw">return</span> records_extracted, records_loaded
+</code></pre>
+          </div>
+        </div>
+
+        <!-- connectors/connector_base.py -->
+        <div id="file-base" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">connector_base.py</span>
+              <span class="code-lang">python</span>
+            </div>
+            <pre><code><span class="kw">from abc import ABC, abstractmethod</span>
+<span class="kw">from dataclasses import dataclass, field</span>
+<span class="kw">from typing import Iterator, Optional</span>
+<span class="kw">from datetime import datetime</span>
+
+<span class="kw">@dataclass</span>
+<span class="kw">class</span> <span class="class">ConnectorConfig</span>:
+    connector_id:   str       # "fusion-hcm-roles"
+    source_type:    str       # REST | FILE | OBJECT_STORAGE | DATABASE | EXTRACT
+    environment:    str       # PROD | UAT
+    run_id:         str       # unique per execution (UUID)
+    run_mode:       str       # FULL | INCREMENTAL
+    credential_ref: str       # OCI Vault secret OCID
+    params:         dict = field(default_factory=dict)
+    watermark:      Optional[str] = None  # high-watermark for incremental loads
+
+<span class="kw">@dataclass</span>
+<span class="kw">class</span> <span class="class">ConnectorRecord</span>:
+    source_id:    str
+    run_id:       str
+    entity_type:  str          # USER | ROLE | PRIVILEGE | CONFIG | ASSIGNMENT
+    entity_key:   str          # business natural key
+    payload:      dict         # raw extracted fields
+    extracted_at: datetime
+    checksum:     Optional[str] = None
+
+<span class="kw">class</span> <span class="class">BaseConnector</span>(ABC):
+    <span class="kw">def</span> <span class="fn">__init__</span>(self, config: ConnectorConfig):
+        self.config = config
+
+    <span class="kw">def</span> <span class="fn">validate</span>(self) -> None:
+        <span class="kw">pass</span>
+
+    <span class="kw">@abstractmethod</span>
+    <span class="kw">def</span> <span class="fn">extract</span>(self) -> Iterator[ConnectorRecord]:
+        ...
+
+    <span class="kw">def</span> <span class="fn">close</span>(self) -> None:
+        <span class="kw">pass</span>
+
+    <span class="kw">def</span> <span class="fn">_get_secret</span>(self, secret_ocid: str) -> str:
+        <span class="kw">import oci, base64</span>
+        signer = oci.auth.signers.get_resource_principals_signer()
+        sc = oci.secrets.SecretsClient(config={}, signer=signer)
+        bundle = sc.get_secret_bundle(secret_id=secret_ocid)
+        <span class="kw">return</span> base64.b64decode(bundle.data.secret_bundle_content.content).decode()
+</code></pre>
+          </div>
+        </div>
+
+        <!-- connectors/workday_hcm.py -->
+        <div id="file-workday" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">workday_hcm.py</span>
+              <span class="code-lang">python</span>
+            </div>
+            <pre><code><span class="kw">from connectors.connector_base import BaseConnector, ConnectorRecord</span>
+<span class="kw">from connector_registry import ConnectorRegistry</span>
+<span class="kw">import requests, datetime</span>
+<span class="kw">from typing import Iterator</span>
+
+<span class="kw">@ConnectorRegistry.register</span>(<span class="str">"workday-hcm"</span>)
+<span class="kw">class</span> <span class="class">WorkdayHCMConnector</span>(BaseConnector):
+    <span class="kw">def</span> <span class="fn">validate</span>(self) -> None:
+        creds = json.loads(self._get_secret(self.config.credential_ref))
+        resp = requests.head(f<span class="str">"https://{self.config.params['host']}/ccx/ws/v1"</span>, 
+                             auth=(creds[<span class="str">'username'</span>], creds[<span class="str">'password'</span>]), timeout=<span class="num">10</span>)
+        <span class="kw">if</span> resp.status_code != <span class="num">200</span>:
+            <span class="kw">raise</span> ConnectionError(<span class="str">"Failed connectivity validation to Workday API"</span>)
+
+    <span class="kw">def</span> <span class="fn">extract</span>(self) -> Iterator[ConnectorRecord]:
+        creds = json.loads(self._get_secret(self.config.credential_ref))
+        <span class="kw">with</span> requests.get(f<span class="str">"https://{self.config.params['host']}/ccx/ws/v1/roles"</span>, 
+                          auth=(creds[<span class="str">'username'</span>], creds[<span class="str">'password'</span>]), stream=<span class="kw">True</span>) <span class="kw">as</span> r:
+            <span class="kw">for</span> item <span class="kw">in</span> r.json().get(<span class="str">'data'</span>, []):
+                <span class="kw">yield</span> ConnectorRecord(
+                    source_id=self.config.connector_id,
+                    run_id=self.config.run_id,
+                    entity_type=<span class="str">"ROLE"</span>,
+                    entity_key=item[<span class="str">'roleId'</span>],
+                    payload=item,
+                    extracted_at=datetime.datetime.utcnow()
+                )
+</code></pre>
+          </div>
+        </div>
+
+        <!-- connectors/fusion_security_config.py -->
+        <div id="file-fusion" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">fusion_security_config.py</span>
+              <span class="code-lang">python</span>
+            </div>
+            <pre><code><span class="kw">import json</span>
+<span class="kw">import logging</span>
+<span class="kw">import requests</span>
+<span class="kw">import datetime</span>
+<span class="kw">import oracledb</span>
+<span class="kw">import oci</span>
+<span class="kw">import base64</span>
+<span class="kw">import os</span>
+<span class="kw">from typing import Iterator</span>
+<span class="kw">from connectors.connector_base import BaseConnector, ConnectorRecord, ConnectorConfig</span>
+<span class="kw">from connector_registry import ConnectorRegistry</span>
+
+<span class="kw">@ConnectorRegistry.register</span>(<span class="str">"fusion-security-config"</span>)
+<span class="kw">class</span> <span class="class">FusionSecurityConfigConnector</span>(BaseConnector):
+    <span class="kw">def</span> <span class="fn">validate</span>(self) -> None:
+        creds = json.loads(self._get_secret(self.config.credential_ref))
+        resp = requests.head(
+            f<span class="str">"{self.config.params['host']}/hcmRestApi/resources/11.13.18.05"</span>,
+            auth=(creds[<span class="str">'username'</span>], creds[<span class="str">'password'</span>]), 
+            timeout=<span class="num">10</span>
+        )
+        <span class="kw">if</span> resp.status_code <span class="kw">not in</span> (<span class="num">200</span>, <span class="num">401</span>):
+            <span class="kw">raise</span> ConnectionError(<span class="str">"Failed connectivity validation to Oracle Fusion API"</span>)
+
+    <span class="kw">def</span> <span class="fn">_get_active_rules</span>(self) -> list:
+        db_user = os.environ.get(<span class="str">"DB_USER"</span>, <span class="str">"sod_admin"</span>)
+        dsn = os.environ.get(<span class="str">"DB_DSN"</span>)
+        
+        signer = oci.auth.signers.get_resource_principals_signer()
+        sc = oci.secrets.SecretsClient(config={}, signer=signer)
+        bundle = sc.get_secret_bundle(secret_id=os.environ[<span class="str">"VAULT_SECRET_OCID"</span>])
+        password = base64.b64decode(bundle.data.secret_bundle_content.content).decode(<span class="str">"utf-8"</span>)
+        
+        conn = oracledb.connect(user=db_user, password=password, dsn=dsn)
+        cursor = conn.cursor()
+        cursor.execute(<span class="str">"SELECT rule_code, source_path FROM sod_config_rules WHERE is_active = 'Y'"</span>)
+        rules = [{<span class="str">"code"</span>: r[<span class="num">0</span>], <span class="str">"path"</span>: r[<span class="num">1</span>]} <span class="kw">for</span> r <span class="kw">in</span> cursor.fetchall()]
+        conn.close()
+        <span class="kw">return</span> rules
+
+    <span class="kw">def</span> <span class="fn">extract</span>(self) -> Iterator[ConnectorRecord]:
+        creds = json.loads(self._get_secret(self.config.credential_ref))
+        rules = self._get_active_rules()
+        
+        <span class="kw">for</span> rule <span class="kw">in</span> rules:
+            url = f<span class="str">"{self.config.params['host']}{rule['path']}"</span>
+            <span class="kw">try</span>:
+                resp = requests.get(url, auth=(creds[<span class="str">'username'</span>], creds[<span class="str">'password'</span>]), timeout=<span class="num">15</span>)
+                <span class="kw">if</span> resp.status_code == <span class="num">200</span>:
+                    payload = resp.json()
+                    val = next(iter(payload.values())) <span class="kw">if</span> <span class="fn">isinstance</span>(payload, dict) <span class="kw">else</span> <span class="fn">str</span>(payload)
+                    
+                    <span class="kw">yield</span> ConnectorRecord(
+                        entity_type=<span class="str">"CONFIG"</span>,
+                        entity_key=rule[<span class="str">'code'</span>],
+                        payload={<span class="str">"path"</span>: rule[<span class="str">'path'</span>], <span class="str">"value"</span>: val, <span class="str">"raw"</span>: payload},
+                        extracted_at=datetime.datetime.utcnow()
+                    )
+            <span class="kw">except</span> Exception <span class="kw">as</span> e:
+                logging.error(f<span class="str">"Failed to fetch config for rule {rule['code']}: {str(e)}"</span>)
+</code></pre>
+          </div>
+        </div>
+
+        <!-- Dockerfile -->
+        <div id="file-docker" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">Dockerfile</span>
+              <span class="code-lang">dockerfile</span>
+            </div>
+            <pre><code># Dockerfile
+# Hardened Multi-Stage Build complying with OCI Functions security specifications
+
+# Build Stage: Pinned dependency container
+FROM fnproject/python:3.11-dep AS build-stage
+WORKDIR /function
+ADD requirements.txt /function/
+RUN /python/bin/pip install --target /python/site-packages -r requirements.txt
+
+# Final Stage: Lean execution container
+FROM fnproject/python:3.11
+WORKDIR /function
+COPY --from=build-stage /python /python
+ADD . /function/
+
+# Hardened non-root security compliance
+RUN groupadd -r fnuser && useradd -r -g fnuser fnuser
+RUN chown -R fnuser:fnuser /function /python
+USER fnuser
+
+ENTRYPOINT ["/python/bin/fdk", "func.py", "handler"]
+</code></pre>
+          </div>
+        </div>
+
+        <!-- func.yaml -->
+        <div id="file-yaml" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">func.yaml</span>
+              <span class="code-lang">yaml</span>
+            </div>
+            <pre><code>schema_version: 20180708
+name: sod-connector-processor
+version: 1.0.0
+runtime: python3.11
+entrypoint: func.handler
+memory: 256
+timeout: 600
+</code></pre>
+          </div>
+        </div>
+
+        <!-- requirements.txt -->
+        <div id="file-reqs" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">requirements.txt</span>
+              <span class="code-lang">plaintext</span>
+            </div>
+            <pre><code>fdk
+oci
+oracledb
+requests
+</code></pre>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

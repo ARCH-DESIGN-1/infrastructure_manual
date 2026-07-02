@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sod-run-status Source Code — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item active">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <a href="compute_functions.html" class="back-link">➔ Back to Functions List</a>
+      <div class="badge">sod-run-status</div>
+      <h1>sod-run-status Codebase</h1>
+      <p class="lead">Contains all configuration and runtime codes for the run status poller microservice.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Files in <code class="inline-code">sod-platform/functions/sod-run-status/</code></h2>
+      <p>Select a file to inspect its source content:</p>
+      
+      <div class="code-navigator">
+        <div class="tab-list">
+          <button class="tab-btn active" onclick="switchTab(event, 'file-py')">func.py</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-docker')">Dockerfile</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-yaml')">func.yaml</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-reqs')">requirements.txt</button>
+          <button class="download-code-btn" onclick="downloadActiveFile(this)">Download Active File</button>
+        </div>
+        
+        <!-- func.py -->
+        <div id="file-py" class="tab-content active">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">func.py</span>
+              <span class="code-lang">python</span>
+            </div>
+            <pre><code><span class="kw">import io</span>
+<span class="kw">import json</span>
+<span class="kw">import logging</span>
+<span class="kw">import os</span>
+<span class="kw">import oci</span>
+<span class="kw">import oracledb</span>
+<span class="kw">import base64</span>
+<span class="kw">from fdk import response</span>
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+VAULT_SECRET_OCID = os.environ.get(<span class="str">"VAULT_SECRET_OCID"</span>)
+DB_USER = os.environ.get(<span class="str">"DB_USER"</span>, <span class="str">"sod_admin"</span>)
+DB_DSN = os.environ.get(<span class="str">"DB_DSN"</span>)
+
+<span class="kw">def</span> <span class="fn">get_db_password</span>() -> str:
+    signer = oci.auth.signers.get_resource_principals_signer()
+    sc     = oci.secrets.SecretsClient(config={}, signer=signer)
+    bundle = sc.get_secret_bundle(secret_id=VAULT_SECRET_OCID)
+    <span class="kw">return</span> base64.b64decode(bundle.data.secret_bundle_content.content).decode(<span class="str">"utf-8"</span>)
+
+<span class="kw">def</span> <span class="fn">query_run_log</span>(run_id):
+    password = get_db_password()
+    conn = oracledb.connect(user=DB_USER, password=password, dsn=DB_DSN)
+    cursor = conn.cursor()
+    cursor.execute(
+        <span class="str">"SELECT connector_id, status, records_loaded, triggered_by, started_at, completed_at, error_message FROM sod_connector_run_log WHERE run_id = :1"</span>,
+        [run_id]
+    )
+    row = cursor.fetchone()
+    conn.close()
+    <span class="kw">if</span> <span class="kw">not</span> row:
+        <span class="kw">return</span> <span class="kw">None</span>
+    <span class="kw">return</span> {
+        <span class="str">"connector_id"</span>: row[<span class="num">0</span>],
+        <span class="str">"status"</span>: row[<span class="num">1</span>],
+        <span class="str">"records_loaded"</span>: row[<span class="num">2</span>],
+        <span class="str">"triggered_by"</span>: row[<span class="num">3</span>],
+        <span class="str">"started_at"</span>: row[<span class="num">4</span>],
+        <span class="str">"completed_at"</span>: row[<span class="num">5</span>],
+        <span class="str">"error_message"</span>: row[<span class="num">6</span>]
+    }
+
+<span class="kw">def</span> <span class="fn">handler</span>(ctx, data=None):
+    <span class="kw">try</span>:
+        # Extract run_id from Request URL /v1/runs/{runId}/status
+        url_parts = ctx.RequestURL().split(<span class="str">"/"</span>)
+        run_id = url_parts[-<span class="num">2</span>] <span class="kw">if</span> <span class="fn">len</span>(url_parts) >= <span class="num">2</span> <span class="kw">else</span> <span class="str">""</span>
+        
+        <span class="kw">if</span> <span class="kw">not</span> run_id:
+            <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">400</span>, response_data=json.dumps({<span class="str">"error"</span>: <span class="str">"runId path parameter is required"</span>}))
+
+        row = query_run_log(run_id)
+        <span class="kw">if</span> <span class="kw">not</span> row:
+            <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">404</span>, response_data=json.dumps({<span class="str">"error"</span>: <span class="str">"Run not found"</span>}))
+            
+        <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">200</span>,
+            response_data=json.dumps({
+                <span class="str">"runId"</span>:       run_id,
+                <span class="str">"connectorId"</span>: row[<span class="str">"connector_id"</span>],
+                <span class="str">"status"</span>:      row[<span class="str">"status"</span>],
+                <span class="str">"rows"</span>:        row[<span class="str">"records_loaded"</span>],
+                <span class="str">"triggeredBy"</span>: row[<span class="str">"triggered_by"</span>],
+                <span class="str">"startedAt"</span>:   <span class="fn">str</span>(row[<span class="str">"started_at"</span>]),
+                <span class="str">"completedAt"</span>: <span class="fn">str</span>(row[<span class="str">"completed_at"</span>]),
+                <span class="str">"error"</span>:       row[<span class="str">"error_message"</span>]
+            }),
+            headers={<span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>}
+        )
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        logger.error(f<span class="str">"Error querying run log status: {str(e)}"</span>)
+        <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">500</span>, response_data=json.dumps({<span class="str">"error"</span>: <span class="fn">str</span>(e)}))
+</code></pre>
+          </div>
+        </div>
+        
+        <!-- Dockerfile -->
+        <div id="file-docker" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">Dockerfile</span>
+              <span class="code-lang">dockerfile</span>
+            </div>
+            <pre><code># Dockerfile
+# Hardened Multi-Stage Build complying with OCI Functions security specifications
+
+# Build Stage: Pinned dependency container
+FROM fnproject/python:3.11-dep AS build-stage
+WORKDIR /function
+ADD requirements.txt /function/
+RUN /python/bin/pip install --target /python/site-packages -r requirements.txt
+
+# Final Stage: Lean execution container
+FROM fnproject/python:3.11
+WORKDIR /function
+COPY --from=build-stage /python /python
+ADD . /function/
+
+# Hardened non-root security compliance
+RUN groupadd -r fnuser && useradd -r -g fnuser fnuser
+RUN chown -R fnuser:fnuser /function /python
+USER fnuser
+
+ENTRYPOINT ["/python/bin/fdk", "func.py", "handler"]
+</code></pre>
+          </div>
+        </div>
+        
+        <!-- func.yaml -->
+        <div id="file-yaml" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">func.yaml</span>
+              <span class="code-lang">yaml</span>
+            </div>
+            <pre><code>schema_version: 20180708
+name: sod-run-status
+version: 1.0.0
+runtime: python3.11
+entrypoint: func.handler
+memory: 256
+timeout: 30
+</code></pre>
+          </div>
+        </div>
+        
+        <!-- requirements.txt -->
+        <div id="file-reqs" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">requirements.txt</span>
+              <span class="code-lang">plaintext</span>
+            </div>
+            <pre><code>fdk
+oci
+oracledb
+</code></pre>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

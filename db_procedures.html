@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>11. Stored Procedures — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item active">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <div class="badge">Procedures</div>
+      <h1>Stored Procedures & Schedulers</h1>
+      <p class="lead">Execution triggers, orchestration jobs, and bypass procedures supporting the automated platform pipeline.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Stored Procedures Catalog</h2>
+      <p>Select a stored procedure to view its SQL source code and download the script:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Procedure Name</th>
+              <th>Object Type</th>
+              <th>Reference File Path</th>
+              <th>Purpose & Functional Rationale</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="clickable-row" onclick="window.location='db_prc_emit_connector_runs.html'">
+              <td><strong>prc_emit_connector_runs</strong></td>
+              <td>Stored Procedure</td>
+              <td>`database/Procedures/prc_emit_connector_runs.sql`</td>
+              <td>Builds target connector payload strings and calls REST endpoints to enqueue trigger commands onto OCI Messaging queues.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='db_prc_run_uca_assessment.html'">
+              <td><strong>prc_run_uca_assessment</strong></td>
+              <td>Stored Procedure</td>
+              <td>`database/Procedures/prc_run_uca_assessment.sql`</td>
+              <td>UC-A assessment orchestrator. Registers runs, confirms freshness of staged data, and initiates rule validations.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='db_prc_run_sensitive_access.html'">
+              <td><strong>prc_run_sensitive_access</strong></td>
+              <td>Stored Procedure</td>
+              <td>`database/Procedures/prc_run_sensitive_access.sql`</td>
+              <td>UC-B sensitive access orchestrator. Flattens role trees and resolves active user-to-privilege access mappings.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='db_prc_run_sod_detection.html'">
+              <td><strong>prc_run_sod_detection</strong></td>
+              <td>Stored Procedure</td>
+              <td>`database/Procedures/prc_run_sod_detection.sql`</td>
+              <td>UC-C conflict detector. Compares user access vectors to flags conflicting roles and updates assessment statuses.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='db_prc_flatten_role_hierarchy.html'">
+              <td><strong>prc_flatten_role_hierarchy</strong></td>
+              <td>Stored Procedure</td>
+              <td>`database/Procedures/prc_flatten_role_hierarchy.sql`</td>
+              <td>Traverses hierarchical nested roles using Oracle CONNECT BY queries to populate flat ancestor mapping structures.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='db_prc_export_run_results.html'">
+              <td><strong>prc_export_run_results</strong></td>
+              <td>Stored Procedure</td>
+              <td>`database/Procedures/prc_export_run_results.sql`</td>
+              <td>Aggregates latest findings into JSON arrays and uploads the reports directly to OCI Object Storage via DBMS_CLOUD.</td>
+            </tr>
+            <tr class="clickable-row" onclick="window.location='db_prc_accept_violation.html'">
+              <td><strong>prc_accept_violation</strong></td>
+              <td>Stored Procedure</td>
+              <td>`database/Procedures/prc_accept_violation.sql`</td>
+              <td>Operations control bypass. Maps approved justifications and compensating controls to overwrite violation flags.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

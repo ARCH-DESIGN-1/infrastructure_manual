@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>prc_flatten_role_hierarchy SQL — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item active">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <a href="codebase_plsql.html" class="back-link">➔ Back to Database Catalog</a>
+      <div class="badge">prc_flatten_role_hierarchy</div>
+      <h1>prc_flatten_role_hierarchy Stored Procedure</h1>
+      <p class="lead">Traverses nested user roles using Oracle recursive CONNECT BY queries to output flat mappings.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Files in <code class="inline-code">sod-platform/database/Procedures/prc_flatten_role_hierarchy.sql</code></h2>
+      <p>Select a file to inspect its source content:</p>
+
+      <div class="code-navigator">
+        <div class="tab-list">
+          <button class="tab-btn active" onclick="switchTab(event, 'file-sql')">prc_flatten_role_hierarchy.sql</button>
+          <button class="download-code-btn" onclick="downloadActiveFile(this)">Download Active File</button>
+        </div>
+        
+        <!-- prc_flatten_role_hierarchy.sql -->
+        <div id="file-sql" class="tab-content active">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">prc_flatten_role_hierarchy.sql</span>
+              <span class="code-lang">sql</span>
+            </div>
+            <pre><code>-- ── Rebuild the flat hierarchy after every ingestion run
+-- ── Uses Oracle CONNECT BY for deep role tree traversal
+
+<span class="kw">CREATE OR REPLACE PROCEDURE</span> prc_flatten_role_hierarchy <span class="kw">AS</span>
+<span class="kw">BEGIN</span>
+    -- Clear previous snapshot
+    <span class="kw">DELETE FROM</span> sod_role_hierarchy_flat;
+
+    -- Recursive insert: for every role, record its full ancestor chain
+    <span class="kw">INSERT INTO</span> sod_role_hierarchy_flat (role_id, ancestor_id, depth, path)
+    <span class="kw">SELECT</span>
+        r.role_id,
+        CONNECT_BY_ROOT r.role_id        <span class="kw">AS</span> ancestor_id,
+        LEVEL - <span class="num">1</span>                         <span class="kw">AS</span> depth,
+        SYS_CONNECT_BY_PATH(r.role_code, <span class="str">' > '</span>) <span class="kw">AS</span> path
+    <span class="kw">FROM</span> sod_roles r
+    <span class="kw">START WITH</span> r.parent_role_id <span class="kw">IS NULL</span>   -- top-level Job Roles
+    <span class="kw">CONNECT BY PRIOR</span> r.role_id = r.parent_role_id
+    <span class="kw">AND</span> LEVEL <= <span class="num">20</span>;                       -- guard against cycles
+
+    <span class="kw">COMMIT;</span>
+<span class="kw">END</span> prc_flatten_role_hierarchy;
+/
+
+-- Also index for fast lookup
+-- CREATE INDEX idx_rhf_ancestor ON sod_role_hierarchy_flat (ancestor_id);
+-- CREATE INDEX idx_rhf_role    ON sod_role_hierarchy_flat (role_id);
+</code></pre>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

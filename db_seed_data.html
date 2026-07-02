@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>seed_data SQL — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item active">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <a href="codebase_plsql.html" class="back-link">➔ Back to Database Catalog</a>
+      <div class="badge">seed_data</div>
+      <h1>seed_data.sql Script</h1>
+      <p class="lead">DML setup script to populate Use Case rules, active functions, SoD conflict matrices, and pluggable integration connector parameters.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Files in <code class="inline-code">sod-platform/database/DML/seed_data.sql</code></h2>
+      <p>Select a file to inspect its source content:</p>
+
+      <div class="code-navigator">
+        <div class="tab-list">
+          <button class="tab-btn active" onclick="switchTab(event, 'file-sql')">seed_data.sql</button>
+          <button class="download-code-btn" onclick="downloadActiveFile(this)">Download Active File</button>
+        </div>
+        
+        <!-- seed_data.sql -->
+        <div id="file-sql" class="tab-content active">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">seed_data.sql</span>
+              <span class="code-lang">sql</span>
+            </div>
+            <pre><code>-- seed_data.sql
+-- Seed initial metadata, configuration rules, sensitive functions, SoD conflict rules, and connector configurations
+
+-- ==========================================
+-- 1. Configuration Baseline Rules (Use Case A)
+-- ==========================================
+<span class="kw">INSERT ALL</span>
+INTO sod_config_rules (rule_code, category, control_name, source_path, expected_value, expected_operator, severity, remediation)
+VALUES (<span class="str">'PWD-001'</span>, <span class="str">'PASSWORD_POLICY'</span>, <span class="str">'Minimum password length'</span>,
+        <span class="str">'/hcmRestApi/resources/11.13.18.05/securitySettings/passwordPolicy/minLength'</span>,
+        <span class="str">'12'</span>, <span class="str">'GTE'</span>, <span class="str">'HIGH'</span>, <span class="str">'Set minimum password length to 12 or more in Security Console'</span>)
+INTO sod_config_rules (rule_code, category, control_name, source_path, expected_value, expected_operator, severity, remediation)
+VALUES (<span class="str">'MFA-001'</span>, <span class="str">'MFA'</span>, <span class="str">'MFA required for admin roles'</span>,
+        <span class="str">'/hcmRestApi/resources/11.13.18.05/securitySettings/mfa/adminRequired'</span>,
+        <span class="str">'true'</span>, <span class="str">'EQ'</span>, <span class="str">'CRITICAL'</span>, <span class="str">'Enable mandatory MFA for all privileged/admin roles'</span>)
+INTO sod_config_rules (rule_code, category, control_name, source_path, expected_value, expected_operator, severity, remediation)
+VALUES (<span class="str">'LOCK-001'</span>, <span class="str">'PASSWORD_POLICY'</span>, <span class="str">'Account lockout after failed attempts'</span>,
+        <span class="str">'/hcmRestApi/resources/11.13.18.05/securitySettings/lockout/maxAttempts'</span>,
+        <span class="str">'5'</span>, <span class="str">'LTE'</span>, <span class="str">'HIGH'</span>, <span class="str">'Set max failed login attempts to 5 or fewer'</span>)
+INTO sod_config_rules (rule_code, category, control_name, source_path, expected_value, expected_operator, severity, remediation)
+VALUES (<span class="str">'SESS-001'</span>, <span class="str">'PASSWORD_POLICY'</span>, <span class="str">'Session timeout (idle) in minutes'</span>,
+        <span class="str">'/hcmRestApi/resources/11.13.18.05/securitySettings/session/idleTimeout'</span>,
+        <span class="str">'30'</span>, <span class="str">'LTE'</span>, <span class="str">'MEDIUM'</span>, <span class="str">'Set idle session timeout to 30 minutes or less'</span>)
+INTO sod_config_rules (rule_code, category, control_name, source_path, expected_value, expected_operator, severity, remediation)
+VALUES (<span class="str">'AUDIT-001'</span>, <span class="str">'AUDIT'</span>, <span class="str">'Audit trail enabled'</span>,
+        <span class="str">'/hcmRestApi/resources/11.13.18.05/auditSettings/enabled'</span>,
+        <span class="str">'true'</span>, <span class="str">'EQ'</span>, <span class="str">'CRITICAL'</span>, <span class="str">'Enable application audit trail in Security Console'</span>)
+<span class="kw">SELECT</span> * <span class="kw">FROM DUAL</span>;
+<span class="kw">COMMIT;</span>
+
+-- ==========================================
+-- 2. Sensitive Functions (Use Case B)
+-- ==========================================
+<span class="kw">INSERT ALL</span>
+INTO sod_sensitive_functions (function_code, function_name, risk_level, module)
+    VALUES (<span class="str">'MANAGE_SUPPLIERS'</span>, <span class="str">'Manage Suppliers'</span>, <span class="str">'CRITICAL'</span>, <span class="str">'PROCUREMENT'</span>)
+INTO sod_sensitive_functions (function_code, function_name, risk_level, module)
+    VALUES (<span class="str">'CREATE_PAYMENTS'</span>, <span class="str">'Create Payments'</span>, <span class="str">'CRITICAL'</span>, <span class="str">'FINANCE'</span>)
+INTO sod_sensitive_functions (function_code, function_name, risk_level, module)
+    VALUES (<span class="str">'MANAGE_USERS'</span>, <span class="str">'Manage Users'</span>, <span class="str">'HIGH'</span>, <span class="str">'HCM'</span>)
+INTO sod_sensitive_functions (function_code, function_name, risk_level, module)
+    VALUES (<span class="str">'APPROVE_INVOICES'</span>, <span class="str">'Approve Invoices'</span>, <span class="str">'HIGH'</span>, <span class="str">'FINANCE'</span>)
+INTO sod_sensitive_functions (function_code, function_name, risk_level, module)
+    VALUES (<span class="str">'PROCESS_PAYROLL'</span>, <span class="str">'Process Payroll'</span>, <span class="str">'CRITICAL'</span>, <span class="str">'PAYROLL'</span>)
+<span class="kw">SELECT</span> * <span class="kw">FROM DUAL</span>;
+<span class="kw">COMMIT;</span>
+
+-- ==========================================
+-- 3. Segregation of Duties Conflict Rules (Use Case C)
+-- ==========================================
+<span class="kw">INSERT ALL</span>
+INTO sod_conflict_rules (rule_code, rule_name, function_a_id, function_b_id, conflict_reason, severity)
+VALUES (
+    <span class="str">'SOD-001'</span>, <span class="str">'Maintain Supplier vs Process Payment'</span>,
+    (<span class="kw">SELECT</span> function_id <span class="kw">FROM</span> sod_sensitive_functions <span class="kw">WHERE</span> function_code=<span class="str">'MANAGE_SUPPLIERS'</span>),
+    (<span class="kw">SELECT</span> function_id <span class="kw">FROM</span> sod_sensitive_functions <span class="kw">WHERE</span> function_code=<span class="str">'CREATE_PAYMENTS'</span>),
+    <span class="str">'User can create fraudulent suppliers and pay them — no separation of payable lifecycle'</span>,
+    <span class="str">'CRITICAL'</span>
+)
+INTO sod_conflict_rules (rule_code, rule_name, function_a_id, function_b_id, conflict_reason, severity)
+VALUES (
+    <span class="str">'SOD-002'</span>, <span class="str">'Manage Users vs Approve Invoices'</span>,
+    (<span class="kw">SELECT</span> function_id <span class="kw">FROM</span> sod_sensitive_functions <span class="kw">WHERE</span> function_code=<span class="str">'MANAGE_USERS'</span>),
+    (<span class="kw">SELECT</span> function_id <span class="kw">FROM</span> sod_sensitive_functions <span class="kw">WHERE</span> function_code=<span class="str">'APPROVE_INVOICES'</span>),
+    <span class="str">'User can grant themselves invoice approval authority'</span>,
+    <span class="str">'HIGH'</span>
+)
+INTO sod_conflict_rules (rule_code, rule_name, function_a_id, function_b_id, conflict_reason, severity)
+VALUES (
+    <span class="str">'SOD-003'</span>, <span class="str">'Create Payments vs Process Payroll'</span>,
+    (<span class="kw">SELECT</span> function_id <span class="kw">FROM</span> sod_sensitive_functions <span class="kw">WHERE</span> function_code=<span class="str">'CREATE_PAYMENTS'</span>),
+    (<span class="kw">SELECT</span> function_id <span class="kw">FROM</span> sod_sensitive_functions <span class="kw">WHERE</span> function_code=<span class="str">'PROCESS_PAYROLL'</span>),
+    <span class="str">'User has control over both general payments and payroll disbursements'</span>,
+    <span class="str">'CRITICAL'</span>
+)
+<span class="kw">SELECT</span> * <span class="kw">FROM DUAL</span>;
+<span class="kw">COMMIT;</span>
+
+-- ==========================================
+-- 4. Ingestion Connector Registry
+-- ==========================================
+<span class="kw">INSERT INTO</span> sod_connector_registry (
+    connector_id, display_name, source_type,
+    connector_class, credential_secret, config_json,
+    schedule_cron, run_mode_default, is_active
+) VALUES (
+    <span class="str">'fusion-security-config'</span>,
+    <span class="str">'Oracle Fusion — Security Configuration Settings'</span>,
+    <span class="str">'REST_API'</span>,
+    <span class="str">'connectors.fusion_security_config.FusionSecurityConfigConnector'</span>,
+    <span class="str">'ocid1.vaultsecret...fusion-hcm-cred'</span>,
+    <span class="str">'{"host":"https://myco.fa.us2.oraclecloud.com","adb_service":"sodassessdb_high"}'</span>,
+    <span class="str">'45 1 * * *'</span>,
+    <span class="str">'FULL'</span>,
+    <span class="str">'Y'</span>
+);
+
+<span class="kw">INSERT INTO</span> sod_connector_registry (
+    connector_id, display_name, source_type, connector_class,
+    credential_secret, config_json, schedule_cron, run_mode_default, is_active
+) VALUES (
+    <span class="str">'workday-hcm'</span>, 
+    <span class="str">'Workday Core HCM'</span>, 
+    <span class="str">'REST_API'</span>,
+    <span class="str">'connectors.workday_hcm.WorkdayHCMConnector'</span>,
+    <span class="str">'ocid1.vaultsecret.oc1.ap-mumbai-1.abx.workday-secret-ocid'</span>,
+    <span class="str">'{"host":"impl-services1.workday.com"}'</span>,
+    <span class="str">'0 4 * * *'</span>, 
+    <span class="str">'INCREMENTAL'</span>,
+    <span class="str">'Y'</span>
+);
+<span class="kw">COMMIT;</span>
+</code></pre>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

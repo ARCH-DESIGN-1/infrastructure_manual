@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>6. API Gateway Routing — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item active">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <div class="badge">Phase 6</div>
+      <h1>API Gateway Routing Setup</h1>
+      <p class="lead">Configures routing deployments to map public REST endpoints to private backend serverless functions.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Gateway API Endpoint Deployments</h2>
+      <p>Configure a single deployment mapped in the public subnet with a prefix `/sod/v1` to host the endpoints:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Resource Endpoint</th>
+              <th>HTTP Method</th>
+              <th>Backend Service Target Function</th>
+              <th>Design Rationale & Explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>`/ingest`</td>
+              <td>`POST`</td>
+              <td>`sod-api-receiver`</td>
+              <td>Ingests raw CSV payload data from enterprise clients. Validates sizes before loading to Object Storage to prevent storage exhaustion attacks.</td>
+            </tr>
+            <tr>
+              <td>`/connectors/run`</td>
+              <td>`POST`</td>
+              <td>`sod-manual-trigger`</td>
+              <td>Endpoint for ad-hoc user commands to trigger specific third-party HCM system synchronization tasks immediately.</td>
+            </tr>
+            <tr>
+              <td>`/runs/{runId}/status`</td>
+              <td>`GET`</td>
+              <td>`sod-run-status`</td>
+              <td>Allows clients to poll the active execution pipeline state, verifying file ingestion outcomes and retrieval rates.</td>
+            </tr>
+            <tr>
+              <td>`/connectors`</td>
+              <td>`GET`</td>
+              <td>`sod-list-connectors`</td>
+              <td>Lists system-configured enterprise database API integrations (Workday, SAP SuccessFactors) available for scheduling.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Step 8 — Configure API Routing Deployments</h2>
+      <p>Create the entry API Gateway controller and add target backend serverless routes.</p>
+
+      <div class="workflow-steps">
+
+        <!-- STEP 8.1 -->
+        <div class="workflow-card" id="step-8-1">
+          <div class="workflow-badge">STEP 8.1</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Developer Services</span>
+                <span class="crumb">API Gateway</span>
+                <span class="crumb active">Create Gateway</span>
+              </div>
+            </div>
+            <p class="step-instruction">Provision a public API Gateway boundary attached to your public network subnet.</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Gateway Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-api-gateway</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Gateway Type</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">PUBLIC</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Subnet Bind</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-public-subnet</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 8.2 -->
+        <div class="workflow-card" id="step-8-2">
+          <div class="workflow-badge">STEP 8.2</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">API Gateway Details</span>
+                <span class="crumb">Deployments</span>
+                <span class="crumb active">Create Deployment</span>
+              </div>
+            </div>
+            <p class="step-instruction">Establish the deployment endpoint folder structure prefix.</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Deployment Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-api-v1-routes</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Path Prefix</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">/sod/v1</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 8.3 -->
+        <div class="workflow-card" id="step-8-3">
+          <div class="workflow-badge">STEP 8.3</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Deployments Wizard</span>
+                <span class="crumb">Routes Tab</span>
+                <span class="crumb active">Add Route</span>
+              </div>
+            </div>
+            <p class="step-instruction">Add the four REST API endpoint methods mapping them to backend serverless functions.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
+              <div class="field-item">
+                <span class="field-label">Ingest and Connector Run Endpoints</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">POST /ingest ➔ sod-api-receiver | POST /connectors/run ➔ sod-manual-trigger</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Status and Info Endpoints</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">GET /runs/{runId}/status ➔ sod-run-status | GET /connectors ➔ sod-list-connectors</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="callout accent">
+        <div class="callout-title">Why We Do It</div>
+        <p>The API Gateway exposes public-facing endpoints to external clients while routing requests securely to functions in the private subnet. It abstracts the underlying function endpoints and enforces rate-limiting to protect the system from denial-of-service (DoS) attacks.</p>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

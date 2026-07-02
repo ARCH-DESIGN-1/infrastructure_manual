@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>prc_run_sod_detection SQL — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item active">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <a href="codebase_plsql.html" class="back-link">➔ Back to Database Catalog</a>
+      <div class="badge">prc_run_sod_detection</div>
+      <h1>prc_run_sod_detection Stored Procedure</h1>
+      <p class="lead">Use Case C conflict engine procedure matching sensitive access parameters to detect SoD violations.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Files in <code class="inline-code">sod-platform/database/Procedures/prc_run_sod_detection.sql</code></h2>
+      <p>Select a file to inspect its source content:</p>
+
+      <div class="code-navigator">
+        <div class="tab-list">
+          <button class="tab-btn active" onclick="switchTab(event, 'file-sql')">prc_run_sod_detection.sql</button>
+          <button class="download-code-btn" onclick="downloadActiveFile(this)">Download Active File</button>
+        </div>
+        
+        <!-- prc_run_sod_detection.sql -->
+        <div id="file-sql" class="tab-content active">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">prc_run_sod_detection.sql</span>
+              <span class="code-lang">sql</span>
+            </div>
+            <pre><code>-- ── Detection: cross-join use-case-B results for both functions of each rule
+
+<span class="kw">CREATE OR REPLACE PROCEDURE</span> prc_run_sod_detection (p_run_id <span class="kw">IN VARCHAR2</span>) <span class="kw">AS</span>
+    v_prev_run_id <span class="kw">VARCHAR2</span>(<span class="num">100</span>);
+<span class="kw">BEGIN</span>
+    -- ── Step 1: Resolve sensitive access for this run (Use Case B engine)
+    <span class="fn">prc_run_sensitive_access</span>(p_run_id);
+
+    -- ── Step 2: Detect conflicts — user holds BOTH function_a AND function_b
+    <span class="kw">INSERT INTO</span> sod_violations (
+        run_id, rule_id, rule_code, user_id, username,
+        function_a_code, function_b_code, path_a, path_b, severity, is_new
+    )
+    <span class="kw">SELECT</span>
+        p_run_id,
+        cr.rule_id,
+        cr.rule_code,
+        a_access.user_id,
+        a_access.username,
+        a_access.function_code,
+        b_access.function_code,
+        a_access.access_path,
+        b_access.access_path,
+        cr.severity,
+        <span class="str">'Y'</span>            -- will be updated in step 3
+    <span class="kw">FROM</span>
+        sod_conflict_rules               cr
+        <span class="kw">JOIN</span> sod_sensitive_access_results a_access
+             <span class="kw">ON</span>  a_access.run_id    = p_run_id
+             <span class="kw">AND</span> a_access.function_id = cr.function_a_id
+        <span class="kw">JOIN</span> sod_sensitive_access_results b_access
+             <span class="kw">ON</span>  b_access.run_id    = p_run_id
+             <span class="kw">AND</span> b_access.function_id = cr.function_b_id
+             <span class="kw">AND</span> b_access.user_id    = a_access.user_id  -- SAME user holds both
+    <span class="kw">WHERE</span>  cr.is_active = <span class="str">'Y'</span>;
+
+    -- ── Step 3: Mark violations that existed in prior run as is_new='N'
+    <span class="kw">UPDATE</span> sod_violations v_new
+    <span class="kw">SET    v_new.is_new</span> = <span class="str">'N'</span>
+    <span class="kw">WHERE  v_new.run_id</span> = p_run_id
+    <span class="kw">AND EXISTS</span> (
+        <span class="kw">SELECT</span> 1
+        <span class="kw">FROM   sod_violations v_prev
+        JOIN   sod_assessment_runs ar ON v_prev.run_id = ar.run_id</span>
+        <span class="kw">WHERE</span>  ar.use_case = <span class="str">'C'</span> <span class="kw">AND</span> ar.status = <span class="str">'COMPLETE'</span>
+        <span class="kw">AND</span>    v_prev.user_id = v_new.user_id
+        <span class="kw">AND</span>    v_prev.rule_id = v_new.rule_id
+    );
+
+    -- ── Step 4: Update run summary
+    <span class="kw">UPDATE</span> sod_assessment_runs
+    <span class="kw">SET    status</span> = <span class="str">'COMPLETE'</span>, completed_at = <span class="kw">SYSTIMESTAMP</span>,
+           findings_total = (<span class="kw">SELECT COUNT</span>(*) <span class="kw">FROM</span> sod_violations <span class="kw">WHERE</span> run_id=p_run_id),
+           findings_new   = (<span class="kw">SELECT COUNT</span>(*) <span class="kw">FROM</span> sod_violations <span class="kw">WHERE</span> run_id=p_run_id <span class="kw">AND</span> is_new=<span class="str">'Y'</span>)
+    <span class="kw">WHERE  run_id</span> = p_run_id;
+    <span class="kw">COMMIT;</span>
+<span class="kw">END</span>;
+/</code></pre>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

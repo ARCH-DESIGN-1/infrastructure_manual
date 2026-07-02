@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sod-api-receiver Source Code — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item active">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <a href="compute_functions.html" class="back-link">➔ Back to Functions List</a>
+      <div class="badge">sod-api-receiver</div>
+      <h1>sod-api-receiver Codebase</h1>
+      <p class="lead">Contains all configuration and runtime codes for the receiver microservice.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Files in <code class="inline-code">sod-platform/functions/sod-api-receiver/</code></h2>
+      <p>Select a file to inspect its source content:</p>
+      
+      <div class="code-navigator">
+        <div class="tab-list">
+          <button class="tab-btn active" onclick="switchTab(event, 'file-py')">func.py</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-docker')">Dockerfile</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-yaml')">func.yaml</button>
+          <button class="tab-btn" onclick="switchTab(event, 'file-reqs')">requirements.txt</button>
+          <button class="download-code-btn" onclick="downloadActiveFile(this)">Download Active File</button>
+        </div>
+        
+        <!-- func.py -->
+        <div id="file-py" class="tab-content active">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">func.py</span>
+              <span class="code-lang">python</span>
+            </div>
+            <pre><code><span class="kw">import</span> io, json, logging, os, uuid, datetime
+<span class="kw">import</span> oci
+<span class="kw">from</span> fdk <span class="kw">import</span> response
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+BUCKET_NAME = <span class="str">"landing-zone-assessment"</span>
+
+<span class="kw">def</span> <span class="fn">handler</span>(ctx, data: io.BytesIO = <span class="kw">None</span>):
+    <span class="kw">try</span>:
+        file_uuid = <span class="fn">str</span>(uuid.uuid4())
+        today = datetime.datetime.utcnow().strftime(<span class="str">"%Y/%m/%d"</span>)
+        
+        content_type = ctx.Headers().get(<span class="str">"content-type"</span>, <span class="str">"text/csv"</span>)
+        ext = <span class="str">"csv"</span>
+        <span class="kw">if</span> <span class="str">"json"</span> <span class="kw">in</span> content_type:
+            ext = <span class="str">"json"</span>
+        <span class="kw">elif</span> <span class="str">"xml"</span> <span class="kw">in</span> content_type:
+            ext = <span class="str">"xml"</span>
+            
+        object_name = f<span class="str">"pending/{today}/{file_uuid}.{ext}"</span>
+
+        signer = oci.auth.signers.get_resource_principals_signer()
+        osc = oci.object_storage.ObjectStorageClient(config={}, signer=signer)
+        namespace = osc.get_namespace().data
+
+        payload_bytes = data.getvalue()
+        osc.put_object(
+            namespace_name=namespace,
+            bucket_name=BUCKET_NAME,
+            object_name=object_name,
+            put_object_body=payload_bytes,
+            content_type=content_type
+        )
+
+        logger.info(json.dumps({
+            <span class="str">"event"</span>: <span class="str">"api_file_received"</span>,
+            <span class="str">"fileUuid"</span>: file_uuid,
+            <span class="str">"objectPath"</span>: object_name
+        }))
+
+        <span class="kw">return</span> response.Response(
+            ctx,
+            status_code=<span class="num">202</span>,
+            response_data=json.dumps({
+                <span class="str">"status"</span>: <span class="str">"Accepted"</span>,
+                <span class="str">"fileUuid"</span>: file_uuid,
+                <span class="str">"targetPath"</span>: object_name,
+                <span class="str">"message"</span>: <span class="str">"File upload accepted. Ingestion processing running asynchronously."</span>
+            }),
+            headers={<span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>}
+        )
+    <span class="kw">except</span> Exception <span class="kw">as</span> e:
+        logger.error(json.dumps({<span class="str">"event"</span>: <span class="str">"api_receiver_error"</span>, <span class="str">"error"</span>: <span class="fn">str</span>(e)}))
+        <span class="kw">return</span> response.Response(ctx, status_code=<span class="num">500</span>, response_data=json.dumps({<span class="str">"error"</span>: <span class="fn">str</span>(e)}))
+</code></pre>
+          </div>
+        </div>
+        
+        <!-- Dockerfile -->
+        <div id="file-docker" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">Dockerfile</span>
+              <span class="code-lang">dockerfile</span>
+            </div>
+            <pre><code># Dockerfile
+# Hardened Multi-Stage Build complying with OCI Functions security specifications
+
+# Build Stage: Pinned dependency container
+FROM fnproject/python:3.11-dep AS build-stage
+WORKDIR /function
+ADD requirements.txt /function/
+RUN /python/bin/pip install --target /python/site-packages -r requirements.txt
+
+# Final Stage: Lean execution container
+FROM fnproject/python:3.11
+WORKDIR /function
+COPY --from=build-stage /python /python
+ADD . /function/
+
+# Hardened non-root security compliance
+RUN groupadd -r fnuser && useradd -r -g fnuser fnuser
+RUN chown -R fnuser:fnuser /function /python
+USER fnuser
+
+ENTRYPOINT ["/python/bin/fdk", "func.py", "handler"]
+</code></pre>
+          </div>
+        </div>
+        
+        <!-- func.yaml -->
+        <div id="file-yaml" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">func.yaml</span>
+              <span class="code-lang">yaml</span>
+            </div>
+            <pre><code>schema_version: 20180708
+name: sod-api-receiver
+version: 1.0.0
+runtime: python3.11
+entrypoint: func.handler
+memory: 256
+timeout: 60
+</code></pre>
+          </div>
+        </div>
+        
+        <!-- requirements.txt -->
+        <div id="file-reqs" class="tab-content">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">requirements.txt</span>
+              <span class="code-lang">plaintext</span>
+            </div>
+            <pre><code>fdk
+oci
+</code></pre>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

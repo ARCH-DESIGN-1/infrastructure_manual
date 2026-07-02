@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>prc_emit_connector_runs SQL — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item active">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <a href="codebase_plsql.html" class="back-link">➔ Back to Database Catalog</a>
+      <div class="badge">prc_emit_connector_runs</div>
+      <h1>prc_emit_connector_runs Stored Procedure</h1>
+      <p class="lead">Queries scheduled connectors, builds message payloads, and triggers OCI queue messages using REST requests.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Files in <code class="inline-code">sod-platform/database/Procedures/prc_emit_connector_runs.sql</code></h2>
+      <p>Select a file to inspect its source content:</p>
+
+      <div class="code-navigator">
+        <div class="tab-list">
+          <button class="tab-btn active" onclick="switchTab(event, 'file-sql')">prc_emit_connector_runs.sql</button>
+          <button class="download-code-btn" onclick="downloadActiveFile(this)">Download Active File</button>
+        </div>
+        
+        <!-- prc_emit_connector_runs.sql -->
+        <div id="file-sql" class="tab-content active">
+          <div class="code-wrap">
+            <div class="code-header">
+              <span class="code-title">prc_emit_connector_runs.sql</span>
+              <span class="code-lang">sql</span>
+            </div>
+            <pre><code>-- The scheduler reads the registry and enqueues run messages
+-- This runs daily at 02:00 UTC — emits one queue message per active connector
+
+<span class="kw">CREATE OR REPLACE PROCEDURE</span> prc_emit_connector_runs <span class="kw">AS</span>
+    v_run_id        <span class="kw">VARCHAR2</span>(<span class="num">100</span>);
+    v_payload       <span class="typ">CLOB</span>;
+    v_now           <span class="kw">TIMESTAMP</span> := <span class="kw">SYSTIMESTAMP</span>;
+<span class="kw">BEGIN</span>
+    <span class="kw">FOR</span> c <span class="kw">IN</span> (
+        <span class="kw">SELECT</span> connector_id, run_mode_default, credential_secret, last_watermark
+        <span class="kw">FROM</span>   sod_connector_registry
+        <span class="kw">WHERE</span>  is_active = <span class="str">'Y'</span>
+        <span class="kw">AND</span>    schedule_cron <span class="kw">IS NOT NULL</span>
+    ) <span class="kw">LOOP</span>
+        v_run_id := <span class="fn">SYS_GUID</span>();
+
+        -- Build queue message
+        v_payload := <span class="fn">JSON_OBJECT</span>(
+            <span class="str">'connectorId'</span>   VALUE c.connector_id,
+            <span class="str">'runId'</span>         VALUE v_run_id,
+            <span class="str">'runMode'</span>       VALUE c.run_mode_default,
+            <span class="str">'watermark'</span>     VALUE <span class="fn">NVL</span>(c.last_watermark, <span class="str">'FULL'</span>),
+            <span class="str">'triggeredBy'</span>   VALUE <span class="str">'SCHEDULER'</span>,
+            <span class="str">'scheduledTime'</span> VALUE <span class="fn">TO_CHAR</span>(v_now, <span class="str">'YYYY-MM-DD"T"HH24:MI:SS"Z"'</span>)
+        );
+
+        -- Enqueue via DBMS_CLOUD (Resource Principal → OCI Queue)
+        DBMS_CLOUD.SEND_REQUEST(
+            credential_name => <span class="kw">NULL</span>,
+            uri             => <span class="str">'https://cell1.queue.messaging.ap-mumbai-1.oci.oraclecloud.com/20210201/queues/'</span>
+                            || <span class="str">'&lt;CONNECTOR_QUEUE_OCID&gt;/messages'</span>,
+            method          => DBMS_CLOUD.METHOD_POST,
+            body            => UTL_RAW.<span class="fn">CAST_TO_RAW</span>(JSON_OBJECT(<span class="str">'messages'</span> VALUE
+                                <span class="fn">JSON_ARRAY</span>(JSON_OBJECT(<span class="str">'content'</span> VALUE v_payload))))
+        );
+
+        -- Audit log
+        <span class="kw">INSERT INTO</span> sod_connector_run_log (connector_id, run_id, trigger_type, run_mode, status)
+        <span class="kw">VALUES</span> (c.connector_id, v_run_id, <span class="str">'SCHEDULED'</span>, c.run_mode_default, <span class="str">'QUEUED'</span>);
+    <span class="kw">END LOOP;</span>
+    <span class="kw">COMMIT;</span>
+<span class="kw">END</span> prc_emit_connector_runs;
+/
+
+-- Create the scheduler job (runs at 02:00 UTC daily)
+<span class="kw">BEGIN</span>
+    DBMS_SCHEDULER.CREATE_JOB(
+        job_name        => <span class="str">'SOD_CONNECTOR_DAILY_EMIT'</span>,
+        job_type        => <span class="str">'STORED_PROCEDURE'</span>,
+        job_action      => <span class="str">'prc_emit_connector_runs'</span>,
+        start_date      => <span class="kw">SYSTIMESTAMP</span>,
+        repeat_interval => <span class="str">'FREQ=DAILY; BYHOUR=2; BYMINUTE=0'</span>,
+        enabled         => <span class="kw">TRUE</span>,
+        comments        => <span class="str">'Emits OCI Queue messages for all scheduled connectors'</span>
+    );
+<span class="kw">END;</span>
+/</code></pre>
+          </div>
+        </div>
+        
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>

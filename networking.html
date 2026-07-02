@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1. Networking Setup — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+
+    <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header">
+      <h2>SoD Platform</h2>
+      <p>OCI Setup Handbook</p>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
+      
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item active">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
+      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
+      
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
+      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
+      
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
+      
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+    </div>
+  </aside>
+
+  <!-- MAIN MAIN CONTAINER -->
+  <main>
+    <header>
+      <div class="badge">Phase 1</div>
+      <h1>Virtual Cloud Network & Subnets Setup</h1>
+      <p class="lead">Configures the underlying network boundary, regional subnets, and gateway routing targets.</p>
+    </header>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Networking Configuration Inputs</h2>
+      <p>The table below summarizes the exact values to input during network provisioning:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Resource</th>
+              <th>Configuration Inputs</th>
+              <th>Reference Resource in HCL</th>
+              <th>Design Rationale & Explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Virtual Cloud Network (VCN)</strong></td>
+              <td>Name: `sod-network-vcn`<br>CIDR: `10.0.0.0/16`<br>DNS: `sodvcn`</td>
+              <td><code class="inline-code">oci_core_vcn.sod_vcn</code></td>
+              <td>Establishes the core network boundary. A `/16` block allows up to 65,536 private IPs, providing ample range to isolate applications and stage staging subnets safely.</td>
+            </tr>
+            <tr>
+              <td><strong>Internet Gateway</strong></td>
+              <td>Name: `sod-internet-gateway`<br>Status: Enabled</td>
+              <td><code class="inline-code">oci_core_internet_gateway.sod_ig</code></td>
+              <td>Provides a path for public ingress requests to route into the public API Gateway subnet. Unused by the database.</td>
+            </tr>
+            <tr>
+              <td><strong>NAT Gateway</strong></td>
+              <td>Name: `sod-nat-gateway`</td>
+              <td><code class="inline-code">oci_core_nat_gateway.sod_nat</code></td>
+              <td>Allows private functions to safely initiate outgoing requests (e.g. fetching external HCM API data) without exposing private database IPs to the public web.</td>
+            </tr>
+            <tr>
+              <td><strong>Service Gateway</strong></td>
+              <td>Name: `sod-service-gateway`<br>Services: All Services in Oracle Services Network</td>
+              <td><code class="inline-code">oci_core_service_gateway.sod_sg</code></td>
+              <td>Routes storage and database operations internally over Oracle's private backbone, completely bypassing public internet transit for maximum security.</td>
+            </tr>
+            <tr>
+              <td><strong>Public Subnet</strong></td>
+              <td>Name: `sod-public-subnet`<br>CIDR: `10.0.1.0/24`<br>Route Table: `sod-public-route-table`</td>
+              <td><code class="inline-code">oci_core_subnet.sod_public_subnet</code></td>
+              <td>Hosts public endpoints (the OCI API Gateway). Demarcated from backend business layers to act as a secure public load-balancing landing zone.</td>
+            </tr>
+            <tr>
+              <td><strong>Private Subnet</strong></td>
+              <td>Name: `sod-private-subnet`<br>CIDR: `10.0.2.0/24`<br>Route Table: `sod-private-route-table`</td>
+              <td><code class="inline-code">oci_core_subnet.sod_private_subnet</code></td>
+              <td>Houses private execution layers (Functions, ATP Database). Direct public internet routing is prohibited to block network scanning attempts.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Step 1 — Configure VCN & Gateways</h2>
+      <p>Initialize the core network domain boundary and add gateways to allow internal/external routing pathways.</p>
+
+      <div class="workflow-steps">
+        
+        <!-- STEP 1.1 -->
+        <div class="workflow-card" id="step-1-1">
+          <div class="workflow-badge">STEP 1.1</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Networking</span>
+                <span class="crumb">Virtual Cloud Networks</span>
+                <span class="crumb active">Create VCN</span>
+              </div>
+            </div>
+            <p class="step-instruction">Enter VCN attributes and enable DNS label resolution configuration in your compartment.</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">VCN Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-network-vcn</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">IPv4 CIDR Block</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">10.0.0.0/16</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">DNS Label</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sodvcn</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 1.2 -->
+        <div class="workflow-card" id="step-1-2">
+          <div class="workflow-badge">STEP 1.2</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">VCN Details</span>
+                <span class="crumb">Resources</span>
+                <span class="crumb">Internet Gateways</span>
+                <span class="crumb active">Create Gateway</span>
+              </div>
+            </div>
+            <p class="step-instruction">Create the internet gateway to allow public ingress and egress routing bounds.</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Gateway Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-internet-gateway</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 1.3 -->
+        <div class="workflow-card" id="step-1-3">
+          <div class="workflow-badge">STEP 1.3</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">VCN Details</span>
+                <span class="crumb">Resources</span>
+                <span class="crumb">NAT Gateways</span>
+                <span class="crumb active">Create Gateway</span>
+              </div>
+            </div>
+            <p class="step-instruction">Provision a NAT Gateway with an ephemeral public IP for safe private-subnet outbound calls.</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Gateway Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-nat-gateway</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Public IP Type</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Ephemeral Public IP</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 1.4 -->
+        <div class="workflow-card" id="step-1-4">
+          <div class="workflow-badge">STEP 1.4</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">VCN Details</span>
+                <span class="crumb">Resources</span>
+                <span class="crumb">Service Gateways</span>
+                <span class="crumb active">Create Gateway</span>
+              </div>
+            </div>
+            <p class="step-instruction">Link all regional private Oracle services (Object Storage, ATP) to the Service Gateway.</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Gateway Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-service-gateway</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Target Service List</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">All Services in Region</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="callout info">
+        <div class="callout-title">Why We Do It</div>
+        <p>Creating separate subnets isolates the public network space (where the API Gateway resides) from the private network space (where OCI Functions and the Autonomous Database execute), completely blocking direct scanner attacks from the internet.</p>
+      </div>
+    </section>
+
+    <div class="section-divider"></div>
+
+    <section>
+      <h2>Step 2 — Configure Route Tables & Subnets</h2>
+      <p>Configure access rules to govern subnet routing scopes and allocate regional addresses.</p>
+
+      <div class="workflow-steps">
+
+        <!-- STEP 2.1 -->
+        <div class="workflow-card" id="step-2-1">
+          <div class="workflow-badge">STEP 2.1</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">VCN Details</span>
+                <span class="crumb">Route Tables</span>
+                <span class="crumb active">Create Route Table (Public)</span>
+              </div>
+            </div>
+            <p class="step-instruction">Define route rules for internet ingress endpoints routing via the Internet Gateway.</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Route Table Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-public-route-table</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Rule Destination</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">0.0.0.0/0</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Target Resource</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-internet-gateway</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2.2 -->
+        <div class="workflow-card" id="step-2-2">
+          <div class="workflow-badge">STEP 2.2</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">VCN Details</span>
+                <span class="crumb">Route Tables</span>
+                <span class="crumb active">Create Route Table (Private)</span>
+              </div>
+            </div>
+            <p class="step-instruction">Set up private routing allowing outgoing traffic via NAT Gateway and internal storage connections via Service Gateway.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
+              <div class="field-item">
+                <span class="field-label">Route Table Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-private-route-table</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Rule 1 (Outbound NAT)</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Destination: 0.0.0.0/0 ➔ Target: sod-nat-gateway</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Rule 2 (Internal Service Gateway)</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Destination: All Services ➔ Target: sod-service-gateway</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2.3 -->
+        <div class="workflow-card" id="step-2-3">
+          <div class="workflow-badge">STEP 2.3</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">VCN Details</span>
+                <span class="crumb">Subnets</span>
+                <span class="crumb active">Create Subnet</span>
+              </div>
+            </div>
+            <p class="step-instruction">Provision regional subnets in the VCN, ensuring the database subnet is strictly private.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
+              <div class="field-item">
+                <span class="field-label">Public Subnet Properties</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Name: sod-public-subnet | CIDR: 10.0.1.0/24 | Access: Public | Route Table: sod-public-route-table | DNS: sodpub</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Private Subnet Properties</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Name: sod-private-subnet | CIDR: 10.0.2.0/24 | Access: Private (Prohibit Public IPs) | Route Table: sod-private-route-table | DNS: sodpriv</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="callout accent">
+        <div class="callout-title">Why We Do It</div>
+        <p>Using Route Tables allows you to configure rules so private functions can access external APIs (like Workday APIs) through the NAT Gateway, and access internal storage systems privately through the Service Gateway, keeping database-to-storage traffic off the public internet.</p>
+      </div>
+    </section>
+  </main>
+
+</body>
+</html>
