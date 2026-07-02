@@ -62,7 +62,7 @@
     <!-- ═══════════════════════════════════════════ STEP 5 ═══ -->
     <section>
       <h2>Step 5 — Create DLQ Pairs then Primary Queues</h2>
-      <p>Two queue pipelines are needed: one for <strong>file ingestion</strong> (Object Storage → Database), and one for <strong>external connector syncs</strong> (HCM API → Database). Each pipeline has a primary queue and a Dead Letter Queue.</p>
+      <p>OCI Queue is a managed messaging service that decouples the file upload event from the heavy data processing work. Instead of the upload triggering direct database writes (which could fail and lose data), it puts a lightweight message into a queue. The processor function then dequeues that message and does the heavy lifting. If processing fails, the message is retried automatically up to a configurable number of times. If all retries fail, the message is moved to the Dead Letter Queue (DLQ) for investigation — no data is lost.</p>
 
       <!-- Queue Reference Table -->
       <div class="table-wrap">
@@ -122,7 +122,8 @@
                 <span class="crumb active">Create Ingestion DLQ (First)</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Developer Services → Queues</strong> and click <strong>Create Queue</strong>. Create the ingestion Dead Letter Queue first. No DLQ assignment is needed for this queue itself.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> A Dead Letter Queue (DLQ) is a safety net — it's just a regular queue used to capture messages that failed all processing retries. You create it first because the primary queue (Step 5.3) will reference this DLQ by OCID during setup. The DLQ itself has no DLQ assignment. When a file ingestion message fails 3 times in a row, it lands here so operators can investigate it without the message being lost forever.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Developer Services → Queues</strong> and click <strong>Create Queue</strong>.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Queue Name</span>
@@ -167,7 +168,8 @@
                 <span class="crumb active">Create Connector DLQ (Second)</span>
               </div>
             </div>
-            <p class="step-instruction">Create the connector Dead Letter Queue. Same configuration as Step 5.1 but with a different name.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating the DLQ for the connector pipeline. HCM API sync failures (network timeouts, auth expiry, rate limits) will be moved here after all retries are exhausted. Separating the connector DLQ from the ingestion DLQ means you can monitor and alert on each pipeline independently — a spike in the connector DLQ points to an HCM API issue; a spike in the ingestion DLQ points to a data format problem.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Repeat the same steps as 5.1 with the name below.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Queue Name</span>
@@ -212,7 +214,8 @@
                 <span class="crumb active">Create Primary Ingestion Queue</span>
               </div>
             </div>
-            <p class="step-instruction">Create the main ingestion queue. Set the <strong>Dead Letter Queue</strong> to <code>sod-ingestion-dlq</code> and set <strong>Max Delivery Attempts</strong> to 3. The 300s visibility allows the database loader enough time to finish before a retry.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating the main ingestion pipeline queue. The <strong>Visibility Timeout of 300 seconds</strong> is the critical setting here — when the processor function dequeues a message, OCI hides that message from other consumers for 300 seconds (5 minutes). This gives the function time to download the file, parse it, and insert all rows into the database. If the function finishes before 300s, it deletes the message. If it crashes, the timeout expires and the message becomes visible again for retry. The 300s value is chosen because even a 50,000-row CSV file should load in under 4 minutes.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Create a new queue and set the Dead Letter Queue to <code>sod-ingestion-dlq</code>.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Queue Name</span>
@@ -264,7 +267,8 @@
                 <span class="crumb active">Create Primary Connector Queue</span>
               </div>
             </div>
-            <p class="step-instruction">Create the connector queue for HCM API sync jobs. The 600s visibility handles large multi-megabyte downloads without triggering duplicate retries.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating the connector sync queue with a longer 600-second visibility timeout. HCM connector syncs are much heavier operations — they authenticate against an external API, paginate through potentially thousands of employee records, download them, transform the data, and write files to Object Storage. 10 minutes gives even the largest HCM tenants enough processing window. Setting Max Delivery Attempts to 3 means a temporary HCM API outage will get up to 2 automatic retries before the job is moved to the DLQ for operator review.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Create another queue and set the Dead Letter Queue to <code>sod-connector-dlq</code>.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Queue Name</span>

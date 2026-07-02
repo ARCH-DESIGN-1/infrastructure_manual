@@ -54,7 +54,7 @@
 
     <div class="callout info">
       <div class="callout-title">&#9432; Prerequisites</div>
-      <p>Complete <strong>Step 1 &amp; 2 (Networking)</strong> first. The ATP Database must be placed in the <code>sod-private-subnet</code> created in the previous page. Complete Step 3 fully before Step 4 — the ATP database uses the KMS encryption key.</p>
+      <p>Complete <strong>Step 1 &amp; 2 (Networking)</strong> first. The ATP Database must be placed in the <code>sod-private-subnet</code> created in the previous page. Complete <strong>Step 3 entirely before Step 4</strong> — the ATP database is configured to use the KMS encryption key created in Step 3.2, so the key must exist first.</p>
     </div>
 
     <div class="section-divider"></div>
@@ -62,7 +62,7 @@
     <!-- ═══════════════════════════════════════════ STEP 3 ═══ -->
     <section>
       <h2>Step 3 — Create KMS Vault, Master Key &amp; Secrets</h2>
-      <p>Provision an HSM-partitioned Key Management Vault, generate a master AES encryption key, then store database passwords and HCM API credentials as encrypted secrets.</p>
+      <p>The KMS (Key Management Service) Vault is a Hardware Security Module (HSM) — a tamper-proof physical device inside Oracle's datacentre that stores your encryption keys. Once a key is created inside an HSM vault, it never leaves the hardware. Any application that needs to decrypt data must call the vault API — the key itself is never exposed. You'll use this vault to store two critical secrets: the ATP database admin password and the HCM integration API credentials. Functions retrieve these secrets at runtime using Resource Principals (no static passwords in code).</p>
 
       <div class="workflow-steps">
 
@@ -77,7 +77,8 @@
                 <span class="crumb active">Create Vault</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Identity &amp; Security → Vault</strong> and click <strong>Create Vault</strong>. Select DEFAULT type for HSM-partitioned hardware security.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Provisioning the HSM vault container. The <em>DEFAULT</em> vault type uses a shared HSM partition — fully HSM-backed but lower cost than a dedicated partition. This vault is the root trust anchor for all sensitive credentials in the platform. Everything — the database password, API keys — flows through here.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Identity &amp; Security → Vault</strong> and click <strong>Create Vault</strong>.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Vault Name</span>
@@ -108,7 +109,8 @@
                 <span class="crumb active">Create Key</span>
               </div>
             </div>
-            <p class="step-instruction">Open <strong>sod-kms-vault</strong>, go to <strong>Master Encryption Keys</strong> and click <strong>Create Key</strong>. This key wraps all secrets stored in this vault.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating the Master Encryption Key (MEK) that wraps every secret stored in this vault. AES-256 (32 bytes) is the industry-standard symmetric encryption algorithm — the same used by banks and governments. <em>HSM</em> protection mode means the key material lives exclusively inside the hardware module; <em>Software</em> protection mode would store it in software (less secure). Always use HSM for production environments.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Open <strong>sod-kms-vault → Master Encryption Keys</strong> and click <strong>Create Key</strong>.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Key Name</span>
@@ -153,7 +155,8 @@
                 <span class="crumb active">Create Secret — DB Password</span>
               </div>
             </div>
-            <p class="step-instruction">Go to <strong>Secrets</strong> tab in the vault and click <strong>Create Secret</strong>. Store the ATP Database admin password. Paste the actual password value in the Secret Contents field.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> A Secret is a versioned, encrypted blob stored inside the vault and wrapped with the master key from Step 3.2. When a Function needs the DB password, it calls the Vault API to retrieve this secret — the actual password value is never stored anywhere in the function code, environment variables, or configuration files. OCI automatically rotates secrets when you create new versions. Paste the <strong>actual DB admin password</strong> you intend to use as the Secret Contents value.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Click <strong>Secrets</strong> in the vault sidebar, then <strong>Create Secret</strong>.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Secret Name</span>
@@ -191,7 +194,8 @@
                 <span class="crumb active">Create Secret — HCM Credentials</span>
               </div>
             </div>
-            <p class="step-instruction">Create a second secret to store HCM integration API credentials (e.g. Workday client ID and client secret as a JSON payload).</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Storing the HCM system API credentials (e.g. Workday Client ID + Client Secret, or Oracle HCM OAuth token) as a second secret. Store these as a JSON object so a single vault call retrieves all credentials needed by the connector function. Example payload: <code>{"client_id": "xxx", "client_secret": "yyy", "token_url": "https://..."}</code>. This means rotating HCM credentials is a vault operation — no code redeployment needed.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Repeat the same process as Step 3.3 with the values below.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Secret Name</span>
@@ -231,7 +235,7 @@
     <!-- ═══════════════════════════════════════════ STEP 4 ═══ -->
     <section>
       <h2>Step 4 — Create Object Storage Bucket &amp; ATP Database</h2>
-      <p>Provision the landing zone bucket (where audit files are uploaded) and the private Autonomous Transaction Processing database (where assessment data is stored and evaluated).</p>
+      <p>The Object Storage Bucket is the entry point for all inbound audit data — client applications upload files here. By enabling <em>Object Events</em>, the bucket automatically fires an OCI Event every time a file is uploaded, which triggers the processing pipeline. The ATP Database (Autonomous Transaction Processing) is Oracle's fully-managed, self-tuning database — it automatically handles patching, backups, and performance tuning. Running it in private endpoint mode means only resources inside the private subnet can connect to it directly.</p>
 
       <div class="workflow-steps">
 
@@ -246,7 +250,8 @@
                 <span class="crumb active">Create Bucket</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Storage → Buckets</strong> and click <strong>Create Bucket</strong>. Enable <em>Emit Object Events</em> — this is what triggers the ingestion function automatically on upload.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating the landing zone where all client audit files (CSV/JSON role and access exports) are deposited. The critical setting here is <strong>Emit Object Events</strong> — without this checkbox, file uploads happen silently and nothing downstream gets triggered. With it enabled, every file upload fires an <code>Object - Create</code> event to the OCI Events Service, which in Step 9 you'll wire to automatically invoke the <code>sod-enqueuer</code> function. This is the starting point of the entire ingestion pipeline.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Storage → Buckets</strong> and click <strong>Create Bucket</strong>. Make sure to check <strong>Emit Object Events</strong> before saving.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Bucket Name</span>
@@ -284,7 +289,8 @@
                 <span class="crumb active">Create Autonomous Database</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Oracle Database → Autonomous Database</strong> and click <strong>Create Autonomous Database</strong>. Set <em>Network Access: Private Endpoint Only</em> and bind it to the private subnet.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Provisioning the central ATP database that stores all SoD assessment data — employee records, role assignments, audit runs, findings, and exceptions. Choosing <em>Transaction Processing (OLTP)</em> workload type optimizes the DB for high-concurrency small row inserts/updates (which is what the function loaders do). Setting <em>Private Endpoint Only</em> means the database gets no public IP and cannot be reached from outside the VCN. Only the serverless functions and the DB bootstrap scripts running inside the private subnet can connect to it.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Oracle Database → Autonomous Database</strong> and click <strong>Create Autonomous Database</strong>. Under Network Access, select <strong>Private Endpoint Only</strong>.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Display Name</span>

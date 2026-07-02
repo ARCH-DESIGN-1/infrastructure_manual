@@ -11,35 +11,26 @@
   <script src="script.js" defer></script>
 </head>
 <body>
-
-  <!-- SIDEBAR NAVIGATION -->
   <aside>
-    <div class="sidebar-header">
-      <h2>SoD Platform</h2>
-      <p>OCI Setup Handbook</p>
-    </div>
+    <div class="sidebar-header"><h2>SoD Platform</h2><p>OCI Setup Handbook</p></div>
     <div class="sidebar-menu">
       <div class="menu-section">Architecture</div>
       <a href="index.html" class="menu-item">Overview &amp; Diagrams</a>
-
       <div class="menu-section">Infrastructure Setup</div>
       <a href="networking.html" class="menu-item">1. Networking Setup</a>
       <a href="storage_vault.html" class="menu-item">2. Storage &amp; Vault</a>
       <a href="messaging.html" class="menu-item">3. Messaging Queues</a>
       <a href="security_iam.html" class="menu-item">4. IAM &amp; Policies</a>
-
       <div class="menu-section">Application Execution</div>
       <a href="compute_functions.html" class="menu-item active">5. OCIR &amp; Functions</a>
       <a href="routing.html" class="menu-item">6. API Gateway Routing</a>
       <a href="events_alarms.html" class="menu-item">7. Events &amp; Alarms</a>
-
       <div class="menu-section">Source Codebases</div>
       <a href="db_bootstrap.html" class="menu-item">8. Database Bootstrap (DML)</a>
       <a href="db_ddl.html" class="menu-item">9. Table Schemas (DDL)</a>
       <a href="db_packages.html" class="menu-item">10. PL/SQL Packages</a>
       <a href="db_procedures.html" class="menu-item">11. Stored Procedures</a>
       <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
-
       <div class="menu-section">Assessment Engines</div>
       <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
     </div>
@@ -48,20 +39,32 @@
   <main>
     <header>
       <div class="badge">Page 5 of 7 &nbsp;·&nbsp; Step 7 of 10</div>
-      <h1>OCIR &amp; Functions — Registry, Application &amp; Serverless Deployment</h1>
-      <p class="lead">Creates a private container image registry, builds and pushes Docker images for each function, creates the Functions Application, then deploys all 7 serverless function definitions.</p>
+      <h1>OCIR &amp; Functions — Container Registry, Application &amp; Serverless Deployment</h1>
+      <p class="lead">OCI Functions is the serverless compute engine of the SoD platform. Each function is a small, self-contained Python container image that runs on-demand — you only pay when it executes. This page covers packaging those containers, pushing them to Oracle's private registry (OCIR), and wiring them up inside OCI as deployable serverless functions.</p>
     </header>
 
     <div class="callout info">
-      <div class="callout-title">&#9432; Prerequisites</div>
-      <p>You must have <strong>Docker installed</strong> locally and access to the <strong>SoD platform source code</strong> repository. Have your OCI <strong>tenancy namespace</strong> ready — find it at <em>Profile → Tenancy → Object Storage Namespace</em>.</p>
+      <div class="callout-title">&#9432; Prerequisites — Before You Start</div>
+      <p>You need three things ready before starting this step:</p>
+      <ol style="margin: 0.5rem 0 0 1.2rem; line-height: 1.9;">
+        <li><strong>Docker Desktop</strong> installed and running on your local machine</li>
+        <li><strong>SoD platform source code</strong> cloned from the repository — each function has its own directory with a <code>Dockerfile</code></li>
+        <li><strong>OCI Tenancy Namespace</strong> — find it at: <em>Profile icon (top right) → Tenancy → Object Storage Namespace</em> field</li>
+      </ol>
     </div>
 
-    <!-- Function Reference Table -->
+    <!-- ══════════════ OVERVIEW ══════════════ -->
     <div class="section-divider"></div>
     <section>
-      <h2>Function Deployment Parameters</h2>
-      <p>Reference table — click any row to view the full source code for that function:</p>
+      <h2>How OCI Functions Works — Overview</h2>
+      <p>The deployment flow has four stages that must be done in order:</p>
+      <div class="callout warning" style="margin-top:1rem;">
+        <div class="callout-title">Deployment Order</div>
+        <p><strong>1. OCIR Repository</strong> (storage for images) → <strong>2. Build &amp; Push Docker images</strong> → <strong>3. Functions Application</strong> (logical grouping container) → <strong>4. Function definitions</strong> (individual function configs pointing to images)</p>
+      </div>
+
+      <h2 style="margin-top:2rem;">Function Deployment Parameters</h2>
+      <p>Click any row to view the full source code for that function. Use these memory and timeout values when creating each function in Step 7.4:</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -69,51 +72,52 @@
               <th>Function Name</th>
               <th>Memory (MB)</th>
               <th>Timeout (s)</th>
-              <th>Purpose</th>
+              <th>Trigger</th>
+              <th>Role in the Platform</th>
             </tr>
           </thead>
           <tbody>
             <tr class="clickable-row" onclick="window.location='code_api_receiver.html'">
               <td><strong>sod-api-receiver</strong></td>
-              <td>256</td>
-              <td>60</td>
-              <td>Receives inbound audit file uploads via the public API endpoint</td>
+              <td>256</td><td>60</td>
+              <td>API Gateway POST /ingest</td>
+              <td>Entry point for client file uploads. Validates the request, uploads the file to Object Storage, creates a run record in the DB, and returns a Run ID to the client immediately.</td>
             </tr>
             <tr class="clickable-row" onclick="window.location='code_enqueuer.html'">
               <td><strong>sod-enqueuer</strong></td>
-              <td>128</td>
-              <td>60</td>
-              <td>Triggered by bucket upload events — enqueues file metadata to ingestion queue</td>
+              <td>128</td><td>60</td>
+              <td>OCI Events (bucket upload)</td>
+              <td>Fires automatically when a file lands in the bucket. Reads the event payload (file name, bucket) and pushes a message onto the ingestion queue to kick off processing.</td>
             </tr>
             <tr class="clickable-row" onclick="window.location='code_processor.html'">
               <td><strong>sod-processor</strong></td>
-              <td>256</td>
-              <td>300</td>
-              <td>Dequeues messages and loads raw CSV/JSON data into ATP staging tables</td>
+              <td>256</td><td>300</td>
+              <td>OCI Queue (message poll)</td>
+              <td>The core data loader. Dequeues messages, downloads the file from Object Storage, parses CSV/JSON rows, and inserts them into the ATP staging tables. 300s timeout handles large multi-megabyte audit files.</td>
             </tr>
             <tr class="clickable-row" onclick="window.location='code_manual_trigger.html'">
               <td><strong>sod-manual-trigger</strong></td>
-              <td>256</td>
-              <td>30</td>
-              <td>Allows on-demand trigger of specific HCM connector sync jobs via API</td>
+              <td>256</td><td>30</td>
+              <td>API Gateway POST /connectors/run</td>
+              <td>Lets operators manually trigger a specific HCM connector sync on-demand. Validates the request and puts a command message onto the connector queue.</td>
             </tr>
             <tr class="clickable-row" onclick="window.location='code_connector_processor.html'">
               <td><strong>sod-connector-processor</strong></td>
-              <td>256</td>
-              <td>600</td>
-              <td>Polls HCM APIs (Workday, Oracle HCM), downloads data, deposits to bucket</td>
+              <td>256</td><td>600</td>
+              <td>OCI Queue (connector queue)</td>
+              <td>The HCM integration worker. Dequeues connector commands, authenticates against the target HCM API (Workday, Oracle HCM Cloud), downloads the employee/role data, and deposits the file into the landing bucket. 600s timeout for slow large downloads.</td>
             </tr>
             <tr class="clickable-row" onclick="window.location='code_run_status.html'">
               <td><strong>sod-run-status</strong></td>
-              <td>256</td>
-              <td>30</td>
-              <td>Returns current run pipeline state and processing stage for a given run ID</td>
+              <td>256</td><td>30</td>
+              <td>API Gateway GET /runs/{runId}/status</td>
+              <td>Lightweight status polling function. Queries the database run record for the given runId and returns the current state (QUEUED, PROCESSING, COMPLETE, FAILED) with counts.</td>
             </tr>
             <tr class="clickable-row" onclick="window.location='code_list_connectors.html'">
               <td><strong>sod-list-connectors</strong></td>
-              <td>256</td>
-              <td>30</td>
-              <td>Lists all active HCM connector configurations stored in the database</td>
+              <td>256</td><td>30</td>
+              <td>API Gateway GET /connectors</td>
+              <td>Returns the list of active HCM connector configurations registered in the database, so client applications know which systems are available for sync.</td>
             </tr>
           </tbody>
         </table>
@@ -122,145 +126,173 @@
 
     <div class="section-divider"></div>
 
-    <!-- ═══════════════════════════════════════════ STEP 7 ═══ -->
+    <!-- ══════════════ STEP 7 ══════════════ -->
     <section>
       <h2>Step 7 — Deploy Container Registry &amp; Functions</h2>
 
       <div class="workflow-steps">
 
-        <!-- STEP 7.1 -->
+        <!-- 7.1 -->
         <div class="workflow-card" id="step-7-1">
           <div class="workflow-badge">STEP 7.1</div>
           <div class="workflow-content">
-            <div class="step-header-action">
-              <div class="breadcrumbs">
-                <span class="crumb">Developer Services</span>
-                <span class="crumb">Container Registry</span>
-                <span class="crumb active">Create Repository</span>
-              </div>
+            <div class="breadcrumbs">
+              <span class="crumb">Developer Services</span>
+              <span class="crumb">Container Registry (OCIR)</span>
+              <span class="crumb active">Create Repository</span>
             </div>
-            <p class="step-instruction">Navigate to <strong>Developer Services → Container Registry</strong> and click <strong>Create Repository</strong>. Set access to <em>Private</em> — this is where all Docker function images are stored.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> OCIR (Oracle Cloud Infrastructure Registry) is Oracle's private Docker image registry — think of it as a private Docker Hub that lives inside your OCI tenancy. You need a repository (a named folder) before you can push images to it. Setting it to <em>Private</em> means only authenticated OCI users and functions with the correct IAM policy can pull images. This is where all 7 function container images will be stored and versioned.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Developer Services → Container Registry</strong>, click <strong>Create Repository</strong>, and fill in the values below.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Repository Name</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">sod-repo</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <div class="value-wrap"><span class="field-value copy-target">sod-repo</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
               <div class="field-item">
                 <span class="field-label">Access</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">Private</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <div class="value-wrap"><span class="field-value copy-target">Private</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- STEP 7.2 -->
+        <!-- 7.2 -->
         <div class="workflow-card" id="step-7-2">
           <div class="workflow-badge">STEP 7.2</div>
           <div class="workflow-content">
-            <div class="step-header-action">
-              <div class="breadcrumbs">
-                <span class="crumb">Local Terminal</span>
-                <span class="crumb">Docker CLI</span>
-                <span class="crumb active">Login to OCIR &amp; Build + Push Images</span>
-              </div>
+            <div class="breadcrumbs">
+              <span class="crumb">Local Terminal</span>
+              <span class="crumb">Docker CLI</span>
+              <span class="crumb active">Login → Build → Tag → Push (×7)</span>
             </div>
-            <p class="step-instruction">From your local terminal, log in to OCIR, then build and push each function image. Repeat the <code>build</code> and <code>push</code> commands for all 7 functions.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Authenticating Docker to the OCIR registry so it can upload images to your private repository. The username format is non-obvious — OCI requires you to prefix your regular OCI username with the tenancy namespace separated by a forward slash. Your password is an OCI <strong>Auth Token</strong> (not your OCI console password) — generate one at <em>Profile → Auth Tokens → Generate Token</em>. Then for each of the 7 function source directories, you run <code>docker build</code> to create the image and <code>docker push</code> to upload it to OCIR.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Run these commands from your local terminal. Replace placeholders with your actual values.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
-                <span class="field-label">1. Docker login command</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">&lt;region-key&gt;.ocir.io</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <span class="field-label">Step A — Login to OCIR (use Auth Token as password)</span>
+                <div class="value-wrap"><span class="field-value copy-target">docker login &lt;region-key&gt;.ocir.io</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
               <div class="field-item">
-                <span class="field-label">Username format</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">&lt;tenancy-namespace&gt;/&lt;oci-username&gt;</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <span class="field-label">OCIR Username Format</span>
+                <div class="value-wrap"><span class="field-value copy-target">&lt;tenancy-namespace&gt;/&lt;your-oci-username&gt;</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
               <div class="field-item">
-                <span class="field-label">2. Image tag format (repeat per function)</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">&lt;region-key&gt;.ocir.io/&lt;tenancy-namespace&gt;/sod-repo/&lt;fn-name&gt;:1.0.0</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <span class="field-label">Step B — Build image (run from inside each function's directory)</span>
+                <div class="value-wrap"><span class="field-value copy-target">docker build -t &lt;region-key&gt;.ocir.io/&lt;tenancy-namespace&gt;/sod-repo/&lt;fn-name&gt;:1.0.0 .</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Step C — Push image to OCIR</span>
+                <div class="value-wrap"><span class="field-value copy-target">docker push &lt;region-key&gt;.ocir.io/&lt;tenancy-namespace&gt;/sod-repo/&lt;fn-name&gt;:1.0.0</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Mumbai region key (if deploying to ap-mumbai-1)</span>
+                <div class="value-wrap"><span class="field-value copy-target">bom</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Repeat build + push for all 7 function names</span>
+                <div class="value-wrap"><span class="field-value copy-target">sod-api-receiver sod-enqueuer sod-processor sod-manual-trigger sod-connector-processor sod-run-status sod-list-connectors</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- STEP 7.3 -->
+        <!-- 7.3 -->
         <div class="workflow-card" id="step-7-3">
           <div class="workflow-badge">STEP 7.3</div>
           <div class="workflow-content">
-            <div class="step-header-action">
-              <div class="breadcrumbs">
-                <span class="crumb">Developer Services</span>
-                <span class="crumb">Functions</span>
-                <span class="crumb active">Create Application</span>
-              </div>
+            <div class="breadcrumbs">
+              <span class="crumb">Developer Services</span>
+              <span class="crumb">Functions</span>
+              <span class="crumb active">Create Application</span>
             </div>
-            <p class="step-instruction">Navigate to <strong>Developer Services → Functions → Applications</strong> and click <strong>Create Application</strong>. Bind it to the private subnet so all functions can access the ATP database internally.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> An OCI Functions Application is a logical grouping container — it doesn't run code itself, but it defines the shared network configuration (VCN + subnet) that all functions inside it inherit. All 7 functions will belong to this single application, meaning they all run inside the private subnet and can communicate with the ATP database, Object Storage, and queues without any additional network setup per function. Think of the Application as a namespace for your functions.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Developer Services → Functions → Applications</strong> and click <strong>Create Application</strong>.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Application Name</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">sod-app</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <div class="value-wrap"><span class="field-value copy-target">sod-app</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
               <div class="field-item">
                 <span class="field-label">VCN</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">sod-network-vcn</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <div class="value-wrap"><span class="field-value copy-target">sod-network-vcn</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
               <div class="field-item">
                 <span class="field-label">Subnets</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">sod-private-subnet</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <div class="value-wrap"><span class="field-value copy-target">sod-private-subnet</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- STEP 7.4 -->
+        <!-- 7.4 -->
         <div class="workflow-card" id="step-7-4">
           <div class="workflow-badge">STEP 7.4</div>
           <div class="workflow-content">
-            <div class="step-header-action">
-              <div class="breadcrumbs">
-                <span class="crumb">sod-app</span>
-                <span class="crumb">Functions</span>
-                <span class="crumb active">Create Function (×7)</span>
-              </div>
+            <div class="breadcrumbs">
+              <span class="crumb">sod-app Details</span>
+              <span class="crumb">Functions</span>
+              <span class="crumb active">Create Function (repeat ×7)</span>
             </div>
-            <p class="step-instruction">Inside <strong>sod-app</strong>, click <strong>Create Function</strong>. Repeat for all 7 functions, using the Docker image tag from Step 7.2 and the memory/timeout values from the reference table above.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating the individual function definitions inside the <code>sod-app</code> application. Each function definition tells OCI: "when this function is invoked, pull this specific Docker image from OCIR, allocate this much memory, and time out after this many seconds". The image path you specify is the full OCIR path of the image you pushed in Step 7.2. You need to repeat this process 7 times — once per function.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Open <strong>sod-app</strong>, click <strong>Create Function</strong>. For each function: enter the name, paste the full image path, set memory and timeout, then click Create. Repeat for all 7.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
-                <span class="field-label">Image format for each function</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">ap-mumbai-1.ocir.io/&lt;namespace&gt;/sod-repo/&lt;fn-name&gt;:1.0.0</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <span class="field-label">Full image path format</span>
+                <div class="value-wrap"><span class="field-value copy-target">bom.ocir.io/&lt;tenancy-namespace&gt;/sod-repo/&lt;fn-name&gt;:1.0.0</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+              </div>
+            </div>
+            <div class="table-wrap" style="margin-top:1rem;">
+              <table>
+                <thead><tr><th>Function Name</th><th>Memory (MB)</th><th>Timeout (s)</th></tr></thead>
+                <tbody>
+                  <tr><td>sod-api-receiver</td><td>256</td><td>60</td></tr>
+                  <tr><td>sod-enqueuer</td><td>128</td><td>60</td></tr>
+                  <tr><td>sod-processor</td><td>256</td><td>300</td></tr>
+                  <tr><td>sod-manual-trigger</td><td>256</td><td>30</td></tr>
+                  <tr><td>sod-connector-processor</td><td>256</td><td>600</td></tr>
+                  <tr><td>sod-run-status</td><td>256</td><td>30</td></tr>
+                  <tr><td>sod-list-connectors</td><td>256</td><td>30</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7.5 -->
+        <div class="workflow-card" id="step-7-5">
+          <div class="workflow-badge">STEP 7.5</div>
+          <div class="workflow-content">
+            <div class="breadcrumbs">
+              <span class="crumb">sod-app Details</span>
+              <span class="crumb">Configuration</span>
+              <span class="crumb active">Set Application Environment Variables</span>
+            </div>
+            <p class="step-instruction"><strong>What you're doing:</strong> OCI Functions reads configuration at runtime from Application-level environment variables. Instead of hardcoding connection strings and resource OCIDs inside the function code, you store them here so they can be updated without redeploying images. These variables tell each function: where the database is, which queue to use, what compartment it runs in, and what region it's in.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> In <strong>sod-app</strong>, click <strong>Configuration</strong> in the left menu. Add the following key-value pairs using the <strong>Add Key-Value Pair</strong> button. Replace placeholder values with your actual OCIDs.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
+              <div class="field-item">
+                <span class="field-label">DB_SECRET_OCID — OCID of the sod-db-password vault secret</span>
+                <div class="value-wrap"><span class="field-value copy-target">ocid1.vaultsecret.oc1..&lt;your-db-secret-ocid&gt;</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
               <div class="field-item">
-                <span class="field-label">Functions to create (in order)</span>
-                <div class="value-wrap">
-                  <span class="field-value copy-target">sod-api-receiver | sod-enqueuer | sod-processor | sod-manual-trigger | sod-connector-processor | sod-run-status | sod-list-connectors</span>
-                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
-                </div>
+                <span class="field-label">ATP_CONNECTION_STRING — ATP private endpoint hostname</span>
+                <div class="value-wrap"><span class="field-value copy-target">sodassessdb_high</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">INGESTION_QUEUE_OCID — OCID of sod-ingestion-queue</span>
+                <div class="value-wrap"><span class="field-value copy-target">ocid1.queue.oc1..&lt;your-ingestion-queue-ocid&gt;</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">CONNECTOR_QUEUE_OCID — OCID of sod-connector-queue</span>
+                <div class="value-wrap"><span class="field-value copy-target">ocid1.queue.oc1..&lt;your-connector-queue-ocid&gt;</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">BUCKET_NAME — Landing zone bucket name</span>
+                <div class="value-wrap"><span class="field-value copy-target">landing-zone-assessment</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">REGION — OCI region identifier</span>
+                <div class="value-wrap"><span class="field-value copy-target">ap-mumbai-1</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
             </div>
           </div>
@@ -269,19 +301,14 @@
       </div>
 
       <div class="callout accent">
-        <div class="callout-title">&#10003; Checkpoint — Functions Complete</div>
-        <p>You should have <strong>1 OCIR Repository</strong> (sod-repo with 7 images), <strong>1 Functions Application</strong> (sod-app), and <strong>7 Functions</strong> deployed inside it. Proceed to Step 8 to configure the API Gateway.</p>
+        <div class="callout-title">&#10003; Checkpoint — Functions Deployment Complete</div>
+        <p>At this point you should have: <strong>1 OCIR Repository</strong> (sod-repo) containing 7 pushed Docker images, <strong>1 Functions Application</strong> (sod-app) in the private subnet, <strong>7 Function definitions</strong> with correct memory/timeout, and <strong>application environment variables</strong> configured. Proceed to Step 8 to wire the API Gateway in front of the appropriate functions.</p>
       </div>
     </section>
 
-    <!-- PAGE NAVIGATION -->
     <div style="display:flex; justify-content:space-between; margin-top: 2.5rem;">
-      <a href="security_iam.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background: rgba(255,255,255,0.08); color:var(--text-secondary); border-radius:8px; font-weight:600; text-decoration:none;">
-        &larr; IAM &amp; Policies
-      </a>
-      <a href="routing.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background: var(--accent); color:#fff; border-radius:8px; font-weight:600; text-decoration:none;">
-        Next: API Gateway Routing &rarr;
-      </a>
+      <a href="security_iam.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background: rgba(255,255,255,0.08); color:var(--text-secondary); border-radius:8px; font-weight:600; text-decoration:none;">&larr; IAM &amp; Policies</a>
+      <a href="routing.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background: var(--accent); color:#fff; border-radius:8px; font-weight:600; text-decoration:none;">Next: API Gateway Routing &rarr;</a>
     </div>
 
   </main>

@@ -62,7 +62,7 @@
     <!-- ═══════════════════════════════════════════ STEP 6 ═══ -->
     <section>
       <h2>Step 6 — Create Dynamic Groups &amp; IAM Policies</h2>
-      <p>Create two dynamic groups — one for Functions, one for the ATP Database — then assign two IAM policies granting each group access to the specific resources they need at runtime.</p>
+      <p>OCI Identity &amp; Access Management (IAM) uses a <em>least-privilege</em> model — by default, every resource can do nothing. You must explicitly grant permissions. <strong>Dynamic Groups</strong> are special IAM groups that automatically include OCI resources (Functions, Databases) that match a matching rule. Instead of managing per-resource credentials, you put resources in a Dynamic Group and grant the group permissions via a Policy. When a Function runs, it proves its identity using a <em>Resource Principal</em> — OCI knows which function is calling based on its OCID, and checks if its Dynamic Group has the necessary policy statements.</p>
 
       <div class="workflow-steps">
 
@@ -77,7 +77,8 @@
                 <span class="crumb active">Create Dynamic Group — Functions</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Identity &amp; Security → Dynamic Groups</strong> and click <strong>Create Dynamic Group</strong>. This group automatically includes all OCI Functions deployed in the compartment.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating a Dynamic Group that automatically includes every OCI Function deployed in your compartment. The matching rule uses <code>resource.type = 'fnfunc'</code> to match all Functions, scoped to your specific compartment by its OCID. This group is then granted permissions in Step 6.3 to: read vault secrets (to get the DB password), manage object storage files (to download audit uploads), and use queues (to enqueue/dequeue messages). Without this group, functions would get permission-denied errors when they try to do any of those things.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Identity &amp; Security → Dynamic Groups</strong> and click <strong>Create Dynamic Group</strong>. Replace the placeholder with your actual Compartment OCID.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Name</span>
@@ -108,7 +109,8 @@
                 <span class="crumb active">Create Dynamic Group — Database</span>
               </div>
             </div>
-            <p class="step-instruction">Create a second dynamic group for the Autonomous Database instance. The database uses this group to read object storage files and enqueue messages.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating a second Dynamic Group for the ATP Database instance. The database uses Oracle's <code>DBMS_CLOUD</code> and <code>DBMS_SCHEDULER</code> packages to read files from Object Storage and enqueue messages. For these internal database operations to succeed (when initiated from a stored procedure or package), the database itself needs to be a recognized resource principal. Without this group, database attempts to read from the bucket or write to a queue will be rejected.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Create a second Dynamic Group with the rule below.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Name</span>
@@ -139,7 +141,8 @@
                 <span class="crumb active">Create Policy — Functions Policy</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Identity &amp; Security → Policies</strong> and click <strong>Create Policy</strong>. Enable <em>Show manual editor</em> and paste all 5 statements below. Replace <code>&lt;compartment_id&gt;</code> with your compartment OCID.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating an IAM Policy that grants the Functions Dynamic Group the specific permissions it needs. Each policy statement uses the format <code>Allow [who] to [action] [resource type] in [scope]</code>. Statement 1 allows functions to read vault secrets (for DB passwords). Statement 2 allows functions to upload/download files from Object Storage. Statement 3 allows functions to put/get messages on queues. Statement 4 allows the Events Service to invoke functions (needed for the bucket upload trigger). Statement 5 allows the API Gateway to invoke functions (needed for the public API routes).</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Identity &amp; Security → Policies</strong>, click <strong>Create Policy</strong>, enable <em>Show manual editor</em>, and paste all 5 statements.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Policy Name</span>
@@ -174,7 +177,8 @@ Allow any-user to use functions-family in compartment id &lt;compartment_id&gt; 
                 <span class="crumb active">Create Policy — Database Policy</span>
               </div>
             </div>
-            <p class="step-instruction">Create a second policy granting the ATP database dynamic group access to read object storage files and enqueue messages onto the connector queue.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating a second policy for the ATP Database Dynamic Group. Statement 1 allows the database to read objects from the landing zone bucket — required when a stored procedure calls <code>DBMS_CLOUD.COPY_DATA</code> to load CSV files. Statement 2 allows the database to put messages onto queues — required when a PL/SQL package needs to trigger an asynchronous connector job. Both are database-initiated operations that use Resource Principals to authenticate.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Create another policy with 2 statements.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Policy Name</span>

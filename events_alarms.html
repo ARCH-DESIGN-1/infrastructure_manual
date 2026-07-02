@@ -62,7 +62,7 @@
     <!-- ═══════════════════════════════════════════ STEP 9 ═══ -->
     <section>
       <h2>Step 9 — Create Events Rule (Upload → Function Trigger)</h2>
-      <p>Configure an OCI Events rule that automatically fires the <code>sod-enqueuer</code> function every time a file is uploaded to the landing zone bucket — no polling, fully event-driven.</p>
+      <p>OCI Events is a rules-based service that listens to activity across all OCI resources and fires actions in response. Without this rule, you'd need to poll the bucket for new files, which is wasteful and slow. With this rule, the moment a client uploads a file, OCI Events immediately calls the <code>sod-enqueuer</code> function with the event payload (bucket name, file name, time). The enqueuer then puts that info onto the ingestion queue. This is the "spark" that ignites the entire processing pipeline — fully automated, zero manual intervention.</p>
 
       <div class="workflow-steps">
 
@@ -77,7 +77,8 @@
                 <span class="crumb active">Create Rule</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Observability &amp; Management → Events Service → Rules</strong> and click <strong>Create Rule</strong>. Configure the event conditions to filter only object creation events on the landing zone bucket.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating a rule with two conditions that must both be true: (1) the event type must be <code>Object - Create</code> (fired when any file is written to Object Storage), and (2) the <code>bucketName</code> attribute must equal <code>landing-zone-assessment</code> (so only uploads to your bucket trigger this, not every bucket in the tenancy). Adding the bucket filter is critical — without it, any upload to any bucket in your compartment would trigger the function.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Observability &amp; Management → Events Service → Rules</strong> and click <strong>Create Rule</strong>. In the <em>Rule Conditions</em> section, add two conditions.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Rule Display Name</span>
@@ -122,7 +123,8 @@
                 <span class="crumb active">Add Action — Invoke Function</span>
               </div>
             </div>
-            <p class="step-instruction">In the <strong>Actions</strong> section of the rule, click <strong>Add Action</strong>. Set the action type to <em>Functions</em>, select <code>sod-app</code> and <code>sod-enqueuer</code>.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Adding the action that fires when the rule conditions are met. Setting the action type to <em>Functions</em> tells OCI Events to invoke the selected function synchronously, passing the event JSON payload as the function input. The <code>sod-enqueuer</code> function receives this payload, extracts the object name and bucket, and enqueues a processing message. This is the only step that wires the passive bucket event into an active processing chain.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> In the <em>Actions</em> section of the rule wizard, click <strong>Add Action</strong>. Select <em>Functions</em> as the action type.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Action Type</span>
@@ -229,7 +231,8 @@
                 <span class="crumb active">Create Topic &amp; Email Subscription</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Developer Services → Notifications → Topics</strong> and click <strong>Create Topic</strong>. After creating the topic, click <strong>Create Subscription</strong> and add the operator email address.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> A Notification Topic is a fan-out channel for alerts. When an alarm fires, it publishes a message to this topic, and the topic delivers it to all subscribers (email, Slack webhook, PagerDuty, etc.). By creating one central topic, you can add multiple subscribers without reconfiguring alarms. After creating the topic, OCI sends a confirmation email to the address you subscribe — <strong>you must click the confirmation link</strong> in that email or alert emails will not be delivered.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Developer Services → Notifications → Topics</strong>, click <strong>Create Topic</strong>, then click <strong>Create Subscription</strong> inside the topic.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Topic Name</span>
@@ -267,7 +270,8 @@
                 <span class="crumb active">Create Alarms (×6)</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Observability &amp; Management → Monitoring → Alarm Definitions</strong> and click <strong>Create Alarm</strong>. Create each of the 6 alarms from the reference table above. For each alarm, set <strong>Destination: sod-alert-topic</strong>.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> OCI Monitoring alarms continuously evaluate metric queries and fire when a condition is breached. Each alarm you create watches a specific metric from a specific OCI resource namespace. When the condition is true (e.g. DLQ depth &gt; 0), OCI publishes an alert to <code>sod-alert-topic</code>, which emails all subscribers. You need 6 alarms: 2 for DLQ failures, 1 for function errors, 1 for queue backlog buildup, and 2 for database resource pressure. Together they give complete visibility into the health of every component in the pipeline.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Observability &amp; Management → Monitoring → Alarm Definitions</strong> and click <strong>Create Alarm</strong> six times, once per row in the reference table above. For each alarm, set the <strong>Notification Destination</strong> to <code>sod-alert-topic</code>.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Example — SOD-DLQ-Depth-CRITICAL (Alarm 1)</span>

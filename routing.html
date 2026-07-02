@@ -107,8 +107,7 @@
     <!-- ═══════════════════════════════════════════ STEP 8 ═══ -->
     <section>
       <h2>Step 8 — Create Gateway, Deployment &amp; Routes</h2>
-
-      <div class="workflow-steps">
+      <p>The API Gateway is the single public-facing entry point for the entire SoD platform. It lives in the public subnet, accepts HTTPS requests from clients anywhere on the internet, authenticates and routes them to the correct serverless function in the private subnet, and returns the response. A <strong>Deployment</strong> is the versioned configuration that holds all the route definitions. <strong>Routes</strong> map a specific URL path + HTTP method combination to a backend function. This design means clients never talk directly to functions — all traffic goes through the gateway, which can enforce rate limits, CORS, and authentication policies.</p>
 
         <!-- STEP 8.1 -->
         <div class="workflow-card" id="step-8-1">
@@ -121,7 +120,8 @@
                 <span class="crumb active">Create API Gateway</span>
               </div>
             </div>
-            <p class="step-instruction">Navigate to <strong>Developer Services → API Management → Gateways</strong> and click <strong>Create Gateway</strong>. Place it in the <em>public subnet</em> so it can receive internet traffic.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> Creating the public-facing API Gateway instance. Selecting <em>Public</em> type means OCI assigns the gateway a public IP address reachable from the internet. Placing it in <code>sod-public-subnet</code> connects it to the public route table (which has the Internet Gateway route), so inbound HTTPS traffic from clients can reach it. The gateway acts as a reverse proxy — it accepts the request, checks the routes you define in Step 8.2, and forwards it to the matching serverless function over the private network.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Developer Services → API Management → Gateways</strong> and click <strong>Create Gateway</strong>.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Gateway Name</span>
@@ -166,7 +166,8 @@
                 <span class="crumb active">Create Deployment</span>
               </div>
             </div>
-            <p class="step-instruction">Open <strong>sod-api-gateway → Deployments</strong> and click <strong>Create Deployment</strong>. Set the path prefix — all routes will be relative to this base path.</p>
+            <p class="step-instruction"><strong>What you're doing:</strong> A Deployment is the configuration object that holds all your route definitions. It's versioned — if you need to add or change routes in the future, you create a new deployment. The <strong>Path Prefix <code>/sod/v1</code></strong> is prepended to all route paths, so clients call <code>https://&lt;gateway-host&gt;/sod/v1/ingest</code>, not just <code>/ingest</code>. The <code>v1</code> prefix means you can add a <code>v2</code> deployment in the future with breaking changes without disrupting existing clients.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Open <strong>sod-api-gateway → Deployments</strong> and click <strong>Create Deployment</strong>. You can add routes within the same wizard — don't click Create until all 4 routes are added.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Deployment Name</span>
