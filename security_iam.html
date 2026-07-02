@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>4. IAM & Policies — OCI Infrastructure Manual</title>
+  <title>4. IAM &amp; Policies — OCI Infrastructure Manual</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 
-    <!-- SIDEBAR NAVIGATION -->
+  <!-- SIDEBAR NAVIGATION -->
   <aside>
     <div class="sidebar-header">
       <h2>SoD Platform</h2>
@@ -20,44 +20,49 @@
     </div>
     <div class="sidebar-menu">
       <div class="menu-section">Architecture</div>
-      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
-      
+      <a href="index.html" class="menu-item">Overview &amp; Diagrams</a>
+
       <div class="menu-section">Infrastructure Setup</div>
-      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
-      <a href="storage_vault.html" class="menu-item ">2. Storage & Vault</a>
-      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
-      <a href="security_iam.html" class="menu-item active">4. IAM & Policies</a>
-      
+      <a href="networking.html" class="menu-item">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item">2. Storage &amp; Vault</a>
+      <a href="messaging.html" class="menu-item">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item active">4. IAM &amp; Policies</a>
+
       <div class="menu-section">Application Execution</div>
-      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
-      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
-      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
-      
+      <a href="compute_functions.html" class="menu-item">5. OCIR &amp; Functions</a>
+      <a href="routing.html" class="menu-item">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item">7. Events &amp; Alarms</a>
+
       <div class="menu-section">Source Codebases</div>
-      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
-      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
-      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
-      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
-      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
-      
+      <a href="db_bootstrap.html" class="menu-item">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
+
       <div class="menu-section">Assessment Engines</div>
-      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+      <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
     </div>
   </aside>
 
-  <!-- MAIN MAIN CONTAINER -->
   <main>
     <header>
-      <div class="badge">Phase 4</div>
-      <h1>IAM Dynamic Groups & Policies Setup</h1>
-      <p class="lead">Configures the compartment security policies to assign access dynamically using Resource Principals.</p>
+      <div class="badge">Page 4 of 7 &nbsp;·&nbsp; Step 6 of 10</div>
+      <h1>IAM — Dynamic Groups &amp; Security Policies</h1>
+      <p class="lead">Creates dynamic resource groups that identify serverless functions and database instances at runtime, then grants them least-privilege access to secrets, object storage, and queues via IAM policies.</p>
     </header>
+
+    <div class="callout info">
+      <div class="callout-title">&#9432; Prerequisites</div>
+      <p>Have your <strong>Compartment OCID</strong> ready — copy it from <em>Identity &amp; Security → Compartments → [your compartment] → OCID</em>. You will need to paste it into the dynamic group matching rules below.</p>
+    </div>
 
     <div class="section-divider"></div>
 
+    <!-- ═══════════════════════════════════════════ STEP 6 ═══ -->
     <section>
-      <h2>Step 6 — Establish Access Control Policies</h2>
-      <p>Configure dynamic resource groupings to bind least-privilege security policy definitions directly to runtimes.</p>
+      <h2>Step 6 — Create Dynamic Groups &amp; IAM Policies</h2>
+      <p>Create two dynamic groups — one for Functions, one for the ATP Database — then assign two IAM policies granting each group access to the specific resources they need at runtime.</p>
 
       <div class="workflow-steps">
 
@@ -67,24 +72,24 @@
           <div class="workflow-content">
             <div class="step-header-action">
               <div class="breadcrumbs">
-                <span class="crumb">Identity & Security</span>
+                <span class="crumb">Identity &amp; Security</span>
                 <span class="crumb">Dynamic Groups</span>
-                <span class="crumb active">Create Dynamic Group</span>
+                <span class="crumb active">Create Dynamic Group — Functions</span>
               </div>
             </div>
-            <p class="step-instruction">Group compartment serverless functions and database instances dynamically using rules.</p>
+            <p class="step-instruction">Navigate to <strong>Identity &amp; Security → Dynamic Groups</strong> and click <strong>Create Dynamic Group</strong>. This group automatically includes all OCI Functions deployed in the compartment.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
-                <span class="field-label">Group 1: Serverless Functions Dynamic Group</span>
+                <span class="field-label">Name</span>
                 <div class="value-wrap">
-                  <span class="field-value copy-target">Name: sod-functions-dg | Matching Rule: ALL {resource.type = 'fnfunc', resource.compartment.id = '&lt;compartment_ocid&gt;'}</span>
+                  <span class="field-value copy-target">sod-functions-dg</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
               <div class="field-item">
-                <span class="field-label">Group 2: Autonomous Database Dynamic Group</span>
+                <span class="field-label">Matching Rule (replace &lt;compartment_ocid&gt;)</span>
                 <div class="value-wrap">
-                  <span class="field-value copy-target">Name: sod-adb-dg | Matching Rule: ALL {resource.type = 'autonomousdatabase', resource.compartment.id = '&lt;compartment_ocid&gt;'}</span>
+                  <span class="field-value copy-target" style="font-size:12px;">ALL {resource.type = 'fnfunc', resource.compartment.id = '&lt;compartment_ocid&gt;'}</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
@@ -98,17 +103,55 @@
           <div class="workflow-content">
             <div class="step-header-action">
               <div class="breadcrumbs">
-                <span class="crumb">Identity & Security</span>
-                <span class="crumb">Policies</span>
-                <span class="crumb active">Create Policy</span>
+                <span class="crumb">Identity &amp; Security</span>
+                <span class="crumb">Dynamic Groups</span>
+                <span class="crumb active">Create Dynamic Group — Database</span>
               </div>
             </div>
-            <p class="step-instruction">Create access control policies allowing Dynamic Groups to invoke compartment resources securely.</p>
+            <p class="step-instruction">Create a second dynamic group for the Autonomous Database instance. The database uses this group to read object storage files and enqueue messages.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
-                <span class="field-label">Policy 1: sod-functions-policy Statements</span>
+                <span class="field-label">Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-adb-dg</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Matching Rule (replace &lt;compartment_ocid&gt;)</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target" style="font-size:12px;">ALL {resource.type = 'autonomousdatabase', resource.compartment.id = '&lt;compartment_ocid&gt;'}</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 6.3 -->
+        <div class="workflow-card" id="step-6-3">
+          <div class="workflow-badge">STEP 6.3</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Identity &amp; Security</span>
+                <span class="crumb">Policies</span>
+                <span class="crumb active">Create Policy — Functions Policy</span>
+              </div>
+            </div>
+            <p class="step-instruction">Navigate to <strong>Identity &amp; Security → Policies</strong> and click <strong>Create Policy</strong>. Enable <em>Show manual editor</em> and paste all 5 statements below. Replace <code>&lt;compartment_id&gt;</code> with your compartment OCID.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
+              <div class="field-item">
+                <span class="field-label">Policy Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-functions-policy</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Policy Statements (5 statements)</span>
                 <div class="value-wrap" style="align-items: flex-start;">
-                  <span class="field-value copy-target" style="font-size: 11.5px; line-height: 1.5; display: block;">Allow dynamic-group sod-functions-dg to read secret-bundles in compartment id &lt;compartment_id&gt;
+                  <span class="field-value copy-target" style="font-size: 11.5px; line-height: 1.8; display: block; white-space: pre-wrap;">Allow dynamic-group sod-functions-dg to read secret-bundles in compartment id &lt;compartment_id&gt;
 Allow dynamic-group sod-functions-dg to manage objects in compartment id &lt;compartment_id&gt;
 Allow dynamic-group sod-functions-dg to use queues in compartment id &lt;compartment_id&gt;
 Allow service cloudevents to use functions-family in compartment id &lt;compartment_id&gt;
@@ -116,10 +159,34 @@ Allow any-user to use functions-family in compartment id &lt;compartment_id&gt; 
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 6.4 -->
+        <div class="workflow-card" id="step-6-4">
+          <div class="workflow-badge">STEP 6.4</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Identity &amp; Security</span>
+                <span class="crumb">Policies</span>
+                <span class="crumb active">Create Policy — Database Policy</span>
+              </div>
+            </div>
+            <p class="step-instruction">Create a second policy granting the ATP database dynamic group access to read object storage files and enqueue messages onto the connector queue.</p>
+            <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
-                <span class="field-label">Policy 2: sod-adb-policy Statements</span>
+                <span class="field-label">Policy Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-adb-policy</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Policy Statements (2 statements)</span>
                 <div class="value-wrap" style="align-items: flex-start;">
-                  <span class="field-value copy-target" style="font-size: 11.5px; line-height: 1.5; display: block;">Allow dynamic-group sod-adb-dg to read objects in compartment id &lt;compartment_id&gt;
+                  <span class="field-value copy-target" style="font-size: 11.5px; line-height: 1.8; display: block; white-space: pre-wrap;">Allow dynamic-group sod-adb-dg to read objects in compartment id &lt;compartment_id&gt;
 Allow dynamic-group sod-adb-dg to use queues in compartment id &lt;compartment_id&gt;</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
@@ -131,11 +198,21 @@ Allow dynamic-group sod-adb-dg to use queues in compartment id &lt;compartment_i
       </div>
 
       <div class="callout accent">
-        <div class="callout-title">Why We Do It</div>
-        <p>Assigning policies to dynamic groups allows functions and database runtimes to communicate securely using OCI Resource Principals, bypassing the need to generate, store, and rotate static API access keys.</p>
+        <div class="callout-title">&#10003; Checkpoint — IAM Complete</div>
+        <p>You should have <strong>2 Dynamic Groups</strong> (<code>sod-functions-dg</code>, <code>sod-adb-dg</code>) and <strong>2 IAM Policies</strong> (<code>sod-functions-policy</code>, <code>sod-adb-policy</code>). Proceed to Step 7 to deploy the containerized functions.</p>
       </div>
     </section>
-  </main>
 
+    <!-- PAGE NAVIGATION -->
+    <div style="display:flex; justify-content:space-between; margin-top: 2.5rem;">
+      <a href="messaging.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background: rgba(255,255,255,0.08); color:var(--text-secondary); border-radius:8px; font-weight:600; text-decoration:none;">
+        &larr; Messaging Queues
+      </a>
+      <a href="compute_functions.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background: var(--accent); color:#fff; border-radius:8px; font-weight:600; text-decoration:none;">
+        Next: OCIR &amp; Functions &rarr;
+      </a>
+    </div>
+
+  </main>
 </body>
 </html>

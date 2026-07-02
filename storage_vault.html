@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2. Storage & Vault — OCI Infrastructure Manual</title>
+  <title>2. Storage &amp; Vault — OCI Infrastructure Manual</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -12,7 +12,7 @@
 </head>
 <body>
 
-    <!-- SIDEBAR NAVIGATION -->
+  <!-- SIDEBAR NAVIGATION -->
   <aside>
     <div class="sidebar-header">
       <h2>SoD Platform</h2>
@@ -20,90 +20,49 @@
     </div>
     <div class="sidebar-menu">
       <div class="menu-section">Architecture</div>
-      <a href="index.html" class="menu-item ">Overview & Diagrams</a>
-      
+      <a href="index.html" class="menu-item">Overview &amp; Diagrams</a>
+
       <div class="menu-section">Infrastructure Setup</div>
-      <a href="networking.html" class="menu-item ">1. Networking Setup</a>
-      <a href="storage_vault.html" class="menu-item active">2. Storage & Vault</a>
-      <a href="messaging.html" class="menu-item ">3. Messaging Queues</a>
-      <a href="security_iam.html" class="menu-item ">4. IAM & Policies</a>
-      
+      <a href="networking.html" class="menu-item">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item active">2. Storage &amp; Vault</a>
+      <a href="messaging.html" class="menu-item">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item">4. IAM &amp; Policies</a>
+
       <div class="menu-section">Application Execution</div>
-      <a href="compute_functions.html" class="menu-item ">5. OCIR & Functions</a>
-      <a href="routing.html" class="menu-item ">6. API Gateway Routing</a>
-      <a href="events_alarms.html" class="menu-item ">7. Events & Alarms</a>
-      
+      <a href="compute_functions.html" class="menu-item">5. OCIR &amp; Functions</a>
+      <a href="routing.html" class="menu-item">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item">7. Events &amp; Alarms</a>
+
       <div class="menu-section">Source Codebases</div>
-      <a href="db_bootstrap.html" class="menu-item ">8. Database Bootstrap (DML)</a>
-      <a href="db_ddl.html" class="menu-item ">9. Table Schemas (DDL)</a>
-      <a href="db_packages.html" class="menu-item ">10. PL/SQL Packages</a>
-      <a href="db_procedures.html" class="menu-item ">11. Stored Procedures</a>
-      <a href="db_seed_data.html" class="menu-item ">12. Seed Data (DML)</a>
-      
+      <a href="db_bootstrap.html" class="menu-item">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
+
       <div class="menu-section">Assessment Engines</div>
-      <a href="assessment_engines.html" class="menu-item ">13. Use Cases & Views</a>
+      <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
     </div>
   </aside>
 
-  <!-- MAIN MAIN CONTAINER -->
   <main>
     <header>
-      <div class="badge">Phase 2</div>
-      <h1>Secure Storage & Database Provisioning</h1>
-      <p class="lead">Configures Object Storage, Key Management Service (KMS), and the Autonomous ATP Database.</p>
+      <div class="badge">Page 2 of 7 &nbsp;·&nbsp; Steps 3 – 4 of 10</div>
+      <h1>Storage — KMS Vault, Object Bucket &amp; ATP Database</h1>
+      <p class="lead">Creates the encryption key vault, stores credentials as secrets, provisions the object storage landing zone, and deploys the private Autonomous Transaction Database.</p>
     </header>
 
-    <div class="section-divider"></div>
-
-    <section>
-      <h2>Storage & Vault Parameters</h2>
-      <p>The table below summarizes the exact values to input during provisioning:</p>
-
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Resource</th>
-              <th>Configuration Inputs</th>
-              <th>Reference Resource in HCL</th>
-              <th>Design Rationale & Explanation</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><strong>KMS Key Vault</strong></td>
-              <td>Name: `sod-kms-vault`<br>Vault Type: DEFAULT (HSM-backed)</td>
-              <td><code class="inline-code">oci_kms_vault.sod_vault</code></td>
-              <td>Provides HSM-partitioned cryptographic security complying with FIPS 140-2 Level 3 standards. Hosts secrets dynamically queried at runtime.</td>
-            </tr>
-            <tr>
-              <td><strong>Master Key</strong></td>
-              <td>Name: `sod-encryption-key`<br>Algorithm: AES / 32 bytes</td>
-              <td><code class="inline-code">oci_kms_key.sod_key</code></td>
-              <td>Symmetric master encryption key. Utilized by the Key Management Service to wrap/unwrap vault secret payloads dynamically.</td>
-            </tr>
-            <tr>
-              <td><strong>Storage Bucket</strong></td>
-              <td>Name: `landing-zone-assessment`<br>Storage Tier: Standard<br>Emit Object Events: Enabled</td>
-              <td><code class="inline-code">oci_objectstorage_bucket.sod_landing_bucket</code></td>
-              <td>Drop zone for client audit files. Configured to emit events to trigger serverless ingestion functions on upload.</td>
-            </tr>
-            <tr>
-              <td><strong>Autonomous Database</strong></td>
-              <td>Name: `sod-assessment-adb` (DB name: `sodassessdb`) <br>Workload: OLTP (Transaction Processing)<br>Network Access: Private Endpoint</td>
-              <td><code class="inline-code">oci_database_autonomous_database.sod_adb</code></td>
-              <td>Sovereign database instance executing conflict and hierarchy assessment rules. Placed on a private endpoint to block external access.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
+    <div class="callout info">
+      <div class="callout-title">&#9432; Prerequisites</div>
+      <p>Complete <strong>Step 1 &amp; 2 (Networking)</strong> first. The ATP Database must be placed in the <code>sod-private-subnet</code> created in the previous page. Complete Step 3 fully before Step 4 — the ATP database uses the KMS encryption key.</p>
+    </div>
 
     <div class="section-divider"></div>
 
+    <!-- ═══════════════════════════════════════════ STEP 3 ═══ -->
     <section>
-      <h2>Step 3 — Configure Vault Secrets</h2>
-      <p>Initialize Key Management Service (KMS) Vault to secure integration credentials and database administration passwords.</p>
+      <h2>Step 3 — Create KMS Vault, Master Key &amp; Secrets</h2>
+      <p>Provision an HSM-partitioned Key Management Vault, generate a master AES encryption key, then store database passwords and HCM API credentials as encrypted secrets.</p>
 
       <div class="workflow-steps">
 
@@ -113,12 +72,12 @@
           <div class="workflow-content">
             <div class="step-header-action">
               <div class="breadcrumbs">
-                <span class="crumb">Identity & Security</span>
+                <span class="crumb">Identity &amp; Security</span>
                 <span class="crumb">Vault</span>
                 <span class="crumb active">Create Vault</span>
               </div>
             </div>
-            <p class="step-instruction">Provision a dedicated hardware security module (HSM) partitioned key vault space.</p>
+            <p class="step-instruction">Navigate to <strong>Identity &amp; Security → Vault</strong> and click <strong>Create Vault</strong>. Select DEFAULT type for HSM-partitioned hardware security.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Vault Name</span>
@@ -144,12 +103,12 @@
           <div class="workflow-content">
             <div class="step-header-action">
               <div class="breadcrumbs">
-                <span class="crumb">Vault Details</span>
-                <span class="crumb">Keys</span>
+                <span class="crumb">sod-kms-vault</span>
+                <span class="crumb">Master Encryption Keys</span>
                 <span class="crumb active">Create Key</span>
               </div>
             </div>
-            <p class="step-instruction">Generate a master encryption symmetric key inside the HSM vault boundary.</p>
+            <p class="step-instruction">Open <strong>sod-kms-vault</strong>, go to <strong>Master Encryption Keys</strong> and click <strong>Create Key</strong>. This key wraps all secrets stored in this vault.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Key Name</span>
@@ -159,9 +118,23 @@
                 </div>
               </div>
               <div class="field-item">
-                <span class="field-label">Algorithm & Length</span>
+                <span class="field-label">Protection Mode</span>
                 <div class="value-wrap">
-                  <span class="field-value copy-target">AES / 32 Bytes</span>
+                  <span class="field-value copy-target">HSM</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Algorithm</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">AES</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Key Length</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">256 Bits (32 Bytes)</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
@@ -175,24 +148,69 @@
           <div class="workflow-content">
             <div class="step-header-action">
               <div class="breadcrumbs">
-                <span class="crumb">Vault Details</span>
+                <span class="crumb">sod-kms-vault</span>
                 <span class="crumb">Secrets</span>
-                <span class="crumb active">Create Secret</span>
+                <span class="crumb active">Create Secret — DB Password</span>
               </div>
             </div>
-            <p class="step-instruction">Configure plaintext database passwords and target HCM integration credentials secrets.</p>
-            <div class="fields-grid" style="grid-template-columns: 1fr;">
+            <p class="step-instruction">Go to <strong>Secrets</strong> tab in the vault and click <strong>Create Secret</strong>. Store the ATP Database admin password. Paste the actual password value in the Secret Contents field.</p>
+            <div class="fields-grid">
               <div class="field-item">
-                <span class="field-label">Secret 1: DB Administrator Password</span>
+                <span class="field-label">Secret Name</span>
                 <div class="value-wrap">
-                  <span class="field-value copy-target">Name: sod-db-password | Encryption Key: sod-encryption-key | Template: Plaintext</span>
+                  <span class="field-value copy-target">sod-db-password</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
               <div class="field-item">
-                <span class="field-label">Secret 2: HCM Integration Credentials Payload</span>
+                <span class="field-label">Encryption Key</span>
                 <div class="value-wrap">
-                  <span class="field-value copy-target">Name: sod-hcm-credentials | Encryption Key: sod-encryption-key | Template: Plaintext</span>
+                  <span class="field-value copy-target">sod-encryption-key</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Secret Type Template</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Plain-Text</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3.4 -->
+        <div class="workflow-card" id="step-3-4">
+          <div class="workflow-badge">STEP 3.4</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">sod-kms-vault</span>
+                <span class="crumb">Secrets</span>
+                <span class="crumb active">Create Secret — HCM Credentials</span>
+              </div>
+            </div>
+            <p class="step-instruction">Create a second secret to store HCM integration API credentials (e.g. Workday client ID and client secret as a JSON payload).</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Secret Name</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-hcm-credentials</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Encryption Key</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-encryption-key</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Secret Type Template</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Plain-Text</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
@@ -204,15 +222,16 @@
 
       <div class="callout info">
         <div class="callout-title">Why We Do It</div>
-        <p>Centralizing passwords inside an HSM-backed vault removes plaintext passwords from codebases and function environment variables, providing zero-trust security boundaries.</p>
+        <p>Storing credentials inside an HSM vault means no passwords exist in source code or function environment variables. Functions retrieve them at runtime using Resource Principals — no static API keys required.</p>
       </div>
     </section>
 
     <div class="section-divider"></div>
 
+    <!-- ═══════════════════════════════════════════ STEP 4 ═══ -->
     <section>
-      <h2>Step 4 — Provision Bucket & Database</h2>
-      <p>Configure storage landing areas and private Autonomous databases to ingest target datasets.</p>
+      <h2>Step 4 — Create Object Storage Bucket &amp; ATP Database</h2>
+      <p>Provision the landing zone bucket (where audit files are uploaded) and the private Autonomous Transaction Processing database (where assessment data is stored and evaluated).</p>
 
       <div class="workflow-steps">
 
@@ -223,11 +242,11 @@
             <div class="step-header-action">
               <div class="breadcrumbs">
                 <span class="crumb">Storage</span>
-                <span class="crumb">Buckets</span>
+                <span class="crumb">Object Storage &amp; Archive Storage</span>
                 <span class="crumb active">Create Bucket</span>
               </div>
             </div>
-            <p class="step-instruction">Setup the landing zone storage area to capture audit file uploads and trigger cloud events.</p>
+            <p class="step-instruction">Navigate to <strong>Storage → Buckets</strong> and click <strong>Create Bucket</strong>. Enable <em>Emit Object Events</em> — this is what triggers the ingestion function automatically on upload.</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Bucket Name</span>
@@ -244,9 +263,9 @@
                 </div>
               </div>
               <div class="field-item">
-                <span class="field-label">Object Event Emission</span>
+                <span class="field-label">Emit Object Events</span>
                 <div class="value-wrap">
-                  <span class="field-value copy-target">Enabled (Check Emit Object Events)</span>
+                  <span class="field-value copy-target">✓ Enable (check the checkbox)</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
@@ -265,19 +284,54 @@
                 <span class="crumb active">Create Autonomous Database</span>
               </div>
             </div>
-            <p class="step-instruction">Configure a private transaction processing database endpoint attached to your private subnet.</p>
+            <p class="step-instruction">Navigate to <strong>Oracle Database → Autonomous Database</strong> and click <strong>Create Autonomous Database</strong>. Set <em>Network Access: Private Endpoint Only</em> and bind it to the private subnet.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
-                <span class="field-label">Database Identity Settings</span>
+                <span class="field-label">Display Name</span>
                 <div class="value-wrap">
-                  <span class="field-value copy-target">Display Name: sod-assessment-adb | Database Name: sodassessdb | Workload: OLTP</span>
+                  <span class="field-value copy-target">sod-assessment-adb</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
               <div class="field-item">
-                <span class="field-label">Network Infrastructure Bindings</span>
+                <span class="field-label">Database Name</span>
                 <div class="value-wrap">
-                  <span class="field-value copy-target">Access: Private Endpoint Only | VCN: sod-network-vcn | Private Subnet: sod-private-subnet</span>
+                  <span class="field-value copy-target">sodassessdb</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Workload Type</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Transaction Processing (OLTP)</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Network Access</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Private Endpoint Only</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">VCN</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-network-vcn</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Subnet</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">sod-private-subnet</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Admin Password</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Use the value stored in sod-db-password secret</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
@@ -287,12 +341,22 @@
 
       </div>
 
-      <div class="callout warning">
-        <div class="callout-title">Why We Do It</div>
-        <p>Enabling object events allows OCI storage to broadcast upload events dynamically. The Standard storage tier guarantees low latency when the database loads and parses files via the OCI Service Gateway.</p>
+      <div class="callout accent">
+        <div class="callout-title">&#10003; Checkpoint — Storage &amp; Vault Complete</div>
+        <p>At this point you should have: <strong>1 KMS Vault</strong> with 1 Key and 2 Secrets, <strong>1 Object Storage Bucket</strong> (with events enabled), and <strong>1 ATP Database</strong> (private endpoint). Proceed to Step 5 on the next page.</p>
       </div>
     </section>
-  </main>
 
+    <!-- PAGE NAVIGATION -->
+    <div style="display:flex; justify-content:space-between; margin-top: 2.5rem;">
+      <a href="networking.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background: rgba(255,255,255,0.08); color:var(--text-secondary); border-radius:8px; font-weight:600; text-decoration:none;">
+        &larr; Networking Setup
+      </a>
+      <a href="messaging.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background: var(--accent); color:#fff; border-radius:8px; font-weight:600; text-decoration:none;">
+        Next: Messaging Queues &rarr;
+      </a>
+    </div>
+
+  </main>
 </body>
 </html>
