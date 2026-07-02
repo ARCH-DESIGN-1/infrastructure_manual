@@ -192,6 +192,170 @@
       font-weight: 600;
     }
   
+  
+    
+    /* Nodes text size and contrast improvements */
+    .node-text-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px !important;
+      font-weight: 800 !important;
+      fill: #ffffff !important;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+    }
+    .node-text-sub {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px !important;
+      fill: #a5b4fc !important;
+      font-weight: 600;
+    }
+    .node-text-desc {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px !important;
+      fill: #e2e8f0 !important;
+      font-weight: 500;
+    }
+    .zone-header {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14.5px !important;
+      font-weight: 800 !important;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+    }
+    .label-comp {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      fill: #fff !important;
+    }
+    .arrow-marker-label {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12.5px !important;
+      font-weight: 800 !important;
+      fill: #ffffff !important;
+      text-shadow: 0 2px 8px #000, 0 0 16px #000, 0 0 4px #000 !important;
+    }
+    .flow-step-text {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11.5px !important;
+      font-weight: 900 !important;
+      fill: #ffffff !important;
+      text-anchor: middle;
+    }
+    
+    /* Flow Lines style overrides - bright, thick, visible by default */
+    .flow-line, .flow-line-dashed, .flow-line-event {
+      opacity: 0.85;
+      stroke-width: 3.5px !important;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: opacity 0.25s ease, stroke-width 0.25s ease, filter 0.25s ease;
+    }
+    .flow-line-dashed, .flow-line-event {
+      stroke-width: 3px !important;
+    }
+    
+    .step-badge-1, .step-badge-2, .step-badge-3, .step-badge-4, .step-badge-5, 
+    .step-badge-6, .step-badge-7, .step-badge-8, .step-badge-9, .step-badge-10, 
+    .step-badge-11, .step-badge-12, .step-badge-13 {
+      opacity: 0.95;
+      transition: opacity 0.25s ease;
+    }
+    .node-item {
+      opacity: 0.92;
+      transition: opacity 0.25s ease, filter 0.25s ease;
+    }
+    
+    /* Interactive Highlight states triggers - dim others slightly, make active shine */
+    .highlight-active .flow-line, 
+    .highlight-active .flow-line-dashed, 
+    .highlight-active .flow-line-event {
+      opacity: 0.15;
+    }
+    .highlight-active .node-item {
+      opacity: 0.35;
+    }
+    .highlight-active .step-badge-1, .highlight-active .step-badge-2, 
+    .highlight-active .step-badge-3, .highlight-active .step-badge-4, 
+    .highlight-active .step-badge-5, .highlight-active .step-badge-6, 
+    .highlight-active .step-badge-7, .highlight-active .step-badge-8, 
+    .highlight-active .step-badge-9, .highlight-active .step-badge-10, 
+    .highlight-active .step-badge-11, .highlight-active .step-badge-12, 
+    .highlight-active .step-badge-13 {
+      opacity: 0.15;
+    }
+
+    /* Highlight single step */
+    .show-step-1 .step-line-1,
+    .show-step-2 .step-line-2,
+    .show-step-3 .step-line-3,
+    .show-step-4 .step-line-4,
+    .show-step-5 .step-line-5,
+    .show-step-6 .step-line-6,
+    .show-step-7 .step-line-7,
+    .show-step-8 .step-line-8,
+    .show-step-9 .step-line-9,
+    .show-step-10 .step-line-10,
+    .show-step-11 .step-line-11,
+    .show-step-12 .step-line-12,
+    .show-step-13 .step-line-13 {
+      opacity: 1 !important;
+      stroke-width: 5px !important;
+      filter: drop-shadow(0 0 6px currentColor);
+    }
+
+    .show-step-1 .step-badge-1,
+    .show-step-2 .step-badge-2,
+    .show-step-3 .step-badge-3,
+    .show-step-4 .step-badge-4,
+    .show-step-5 .step-badge-5,
+    .show-step-6 .step-badge-6,
+    .show-step-7 .step-badge-7,
+    .show-step-8 .step-badge-8,
+    .show-step-9 .step-badge-9,
+    .show-step-10 .step-badge-10,
+    .show-step-11 .step-badge-11,
+    .show-step-12 .step-badge-12,
+    .show-step-13 .step-badge-13 {
+      opacity: 1 !important;
+    }
+
+    /* Highlight matching nodes */
+    .show-step-1 .node-client, .show-step-1 .node-gateway, .show-step-1 .node-apigw,
+    .show-step-2 .node-apigw, .show-step-2 .node-function-receiver,
+    .show-step-3 .node-function-receiver, .show-step-3 .node-storage,
+    .show-step-4 .node-storage, .show-step-4 .node-event,
+    .show-step-5 .node-event, .show-step-5 .node-function-enqueuer,
+    .show-step-6 .node-function-enqueuer, .show-step-6 .node-queue-ingest,
+    .show-step-7 .node-queue-ingest, .show-step-7 .node-function-processor,
+    .show-step-8 .node-function-processor, .show-step-8 .node-database,
+    .show-step-9 .node-apigw, .show-step-9 .node-function-trigger,
+    .show-step-10 .node-function-trigger, .show-step-10 .node-queue-connect, .show-step-10 .node-database,
+    .show-step-11 .node-queue-connect, .show-step-11 .node-function-connector,
+    .show-step-12 .node-function-connector, .show-step-12 .node-gateway-nat, .show-step-12 .node-external,
+    .show-step-13 .node-function-connector, .show-step-13 .node-storage {
+      opacity: 1 !important;
+      filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.6));
+    }
+    
+    /* Interactive description card highlights */
+    .step-list-item {
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0.5rem;
+      transition: all 0.25s ease;
+    }
+    .step-list-item:hover {
+      background: rgba(255, 255, 255, 0.03);
+      border-color: rgba(255, 255, 255, 0.08);
+      transform: translateX(4px);
+    }
+    .step-list-item.active-desc-card {
+      background: rgba(59, 130, 246, 0.08);
+      border-color: rgba(59, 130, 246, 0.25);
+    }
+
   </style>
 </head>
 <body>
@@ -231,7 +395,10 @@
 
     <!-- TABS -->
     <div class="tab-container">
-      <button class="tab-btn active" id="btn-ingestion" onclick="switchArchitectureTab('ingestion')">
+      <button class="tab-btn active" id="btn-unified" onclick="switchArchitectureTab('unified')">
+        <span>🕸️</span> Complete Architecture Map
+      </button>
+      <button class="tab-btn" id="btn-ingestion" onclick="switchArchitectureTab('ingestion')">
         <span>📥</span> Ingestion Pipeline
       </button>
       <button class="tab-btn" id="btn-connector" onclick="switchArchitectureTab('connector')">
@@ -248,7 +415,478 @@
     <!-- ──────────────────────────────────────────────────────── -->
     <!--  TAB 1: INGESTION PIPELINE                               -->
     <!-- ──────────────────────────────────────────────────────── -->
-    <div id="tab-ingestion" class="tab-content active">
+    <div id="tab-unified" class="tab-content active">
+      <!-- Quick Flow Filters -->
+      <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap; align-items:center;">
+        <span style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-right:0.5rem;">Interactive Filters:</span>
+        <button class="tab-btn" style="padding:0.4rem 0.8rem; font-size:12px; background:rgba(255,255,255,0.02);" onclick="quickFilterFlow('all')">✨ Show All Processes</button>
+        <button class="tab-btn" style="padding:0.4rem 0.8rem; font-size:12px; background:rgba(16,185,129,0.06); border-color:rgba(16,185,129,0.2);" onclick="quickFilterFlow('ingest')">📥 Ingestion Steps (1-8)</button>
+        <button class="tab-btn" style="padding:0.4rem 0.8rem; font-size:12px; background:rgba(245,158,11,0.06); border-color:rgba(245,158,11,0.2);" onclick="quickFilterFlow('connector')">🔄 HCM Sync Steps (9-13)</button>
+      </div>
+
+      <div class="diagram-wrapper">
+        
+        <svg viewBox="0 0 1600 1080" xmlns="http://www.w3.org/2000/svg" style="background:#0a0f1d; border-radius:16px;" id="architectureMap">
+          <defs>
+            <!-- High-tech Grid Background Pattern -->
+            <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255, 255, 255, 0.022)" stroke-width="1"/>
+            </pattern>
+
+            <!-- Line Arrow Markers -->
+            <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#3b82f6"/></marker>
+            <marker id="arrowGreen" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#10b981"/></marker>
+            <marker id="arrowPurple" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#8b5cf6"/></marker>
+            <marker id="arrowAmber" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#f59e0b"/></marker>
+            <marker id="arrowRose" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#fb7185"/></marker>
+
+            <!-- Card Linear Gradients -->
+            <linearGradient id="gradClient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/>
+            </linearGradient>
+            <linearGradient id="gradGateway" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1e3a8a"/><stop offset="100%" stop-color="#0f172a"/>
+            </linearGradient>
+            <linearGradient id="gradApigw" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#064e3b"/><stop offset="100%" stop-color="#022c22"/>
+            </linearGradient>
+            <linearGradient id="gradFunction" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#3b0764"/><stop offset="100%" stop-color="#1e1b4b"/>
+            </linearGradient>
+            <linearGradient id="gradDatabase" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#292524"/><stop offset="100%" stop-color="#1c1917"/>
+            </linearGradient>
+            <linearGradient id="gradStorage" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#1e1b4b"/><stop offset="100%" stop-color="#0f172a"/>
+            </linearGradient>
+            <linearGradient id="gradEvent" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#311042"/><stop offset="100%" stop-color="#1a0b2e"/>
+            </linearGradient>
+            <linearGradient id="gradMonitoring" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#450a0a"/><stop offset="100%" stop-color="#180000"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Apply Grid Background -->
+          <rect width="1600" height="1080" fill="url(#grid)" rx="16"/>
+
+          <!-- ──────────────────────────────────────────────────────── -->
+          <!--  ZONE: EXTERNAL / INTERNET                               -->
+          <!-- ──────────────────────────────────────────────────────── -->
+          <rect x="20" y="15" width="1560" height="90" rx="12" class="zone-external" style="fill:rgba(15,23,42,0.6); stroke:rgba(255,255,255,0.06); stroke-width:1;"/>
+          <text x="36" y="38" class="zone-header" fill="#94a3b8">External / Internet</text>
+          
+          <!-- Client Box -->
+          <g class="node-item node-client">
+            <rect x="80" y="32" width="220" height="58" rx="8" class="node-rect" style="fill:url(#gradClient); stroke:#475569;"/>
+            <text x="190" y="54" text-anchor="middle" class="node-text-title">💻 Client App / Portal</text>
+            <text x="190" y="70" text-anchor="middle" class="node-text-sub">Operator Sync / Ingest request</text>
+          </g>
+
+          <!-- External HCM Box -->
+          <g class="node-item node-external">
+            <rect x="1280" y="32" width="240" height="58" rx="8" class="node-rect" style="fill:url(#gradClient); stroke:#475569;"/>
+            <text x="1400" y="54" text-anchor="middle" class="node-text-title">☁️ External HCM APIs</text>
+            <text x="1400" y="70" text-anchor="middle" class="node-text-sub">Workday, SuccessFactors, Oracle Cloud</text>
+          </g>
+
+          <!-- ──────────────────────────────────────────────────────── -->
+          <!--  ZONE: VCN BOUNDARY                                      -->
+          <!-- ──────────────────────────────────────────────────────── -->
+          <rect x="20" y="125" width="1240" height="930" rx="16" class="zone-vcn" style="fill:rgba(30,41,59,0.15); stroke:#3b82f6; stroke-width:1.5;"/>
+          <text x="36" y="148" class="zone-header" fill="#3b82f6">sod-network-vcn (10.0.0.0/16)</text>
+
+          <!-- Gateways inside VCN -->
+          <g class="node-item node-gateway">
+            <rect x="60" y="145" width="150" height="50" rx="6" class="node-rect" style="fill:url(#gradGateway); stroke:#3b82f6;"/>
+            <text x="135" y="175" text-anchor="middle" class="label-comp" fill="#fff" style="font-size:11px; font-weight:600;">🌐 Internet Gateway</text>
+          </g>
+
+          <g class="node-item node-gateway-nat">
+            <rect x="230" y="145" width="150" height="50" rx="6" class="node-rect" style="fill:url(#gradGateway); stroke:#60a5fa;"/>
+            <text x="305" y="175" text-anchor="middle" class="label-comp" fill="#fff" style="font-size:11px; font-weight:600;">🔄 NAT Gateway</text>
+          </g>
+
+          <g class="node-item node-gateway-svc">
+            <rect x="400" y="145" width="170" height="50" rx="6" class="node-rect" style="fill:url(#gradGateway); stroke:#60a5fa;"/>
+            <text x="485" y="175" text-anchor="middle" class="label-comp" fill="#fff" style="font-size:11px; font-weight:600;">🔗 Service Gateway</text>
+          </g>
+
+          <!-- Subnets -->
+          <!-- Public Subnet (DMZ) -->
+          <rect x="30" y="245" width="1220" height="100" class="svg-bg-sub-pub" style="fill:rgba(16,185,129,0.02); stroke:rgba(16,185,129,0.25); stroke-width:1.5;"/>
+          <text x="42" y="265" class="zone-header" fill="#34d399">sod-public-subnet (10.0.1.0/24)</text>
+
+          <g class="node-item node-apigw">
+            <rect x="440" y="260" width="200" height="70" rx="8" class="node-rect" style="fill:url(#gradApigw); stroke:#10b981; stroke-width:2;"/>
+            <text x="540" y="288" text-anchor="middle" class="node-text-title">🌐 API Gateway</text>
+            <text x="540" y="304" text-anchor="middle" class="node-text-sub">sod-api-gateway (Step 8.1)</text>
+          </g>
+
+          <!-- Private Subnet -->
+          <rect x="30" y="365" width="1220" height="675" class="svg-bg-sub-priv" style="fill:rgba(139,92,246,0.02); stroke:rgba(139,92,246,0.25); stroke-width:1.5;"/>
+          <text x="42" y="385" class="zone-header" fill="#a78bfa">sod-private-subnet (10.0.2.0/24)</text>
+
+          <!-- sod-app Functions Application container -->
+          <rect x="40" y="395" width="820" height="525" rx="10" style="fill:rgba(109,40,217,0.02); stroke:#7c3aed; stroke-width:1; stroke-dasharray:4 3;"/>
+          <text x="52" y="413" class="zone-header" fill="#a78bfa" style="font-size:10px;">Functions Application: sod-app — Step 7.3</text>
+
+          <!-- Private Resources: Functions Grid -->
+          <!-- Row 1: Ingestion Pipeline -->
+          <g class="node-item node-function-receiver">
+            <rect x="80" y="440" width="200" height="80" rx="8" class="node-rect" style="fill:url(#gradFunction); stroke:#8b5cf6;"/>
+            <text x="180" y="470" text-anchor="middle" class="node-text-title">⚡ sod-api-receiver</text>
+            <text x="180" y="486" text-anchor="middle" class="node-text-sub">256MB &middot; Receiver (Step 7.4)</text>
+          </g>
+
+          <g class="node-item node-function-enqueuer">
+            <rect x="360" y="440" width="200" height="80" rx="8" class="node-rect" style="fill:url(#gradFunction); stroke:#8b5cf6;"/>
+            <text x="460" y="470" text-anchor="middle" class="node-text-title">⚡ sod-enqueuer</text>
+            <text x="460" y="486" text-anchor="middle" class="node-text-sub">128MB &middot; Enqueuer (Step 7.4)</text>
+          </g>
+
+          <g class="node-item node-function-processor">
+            <rect x="640" y="440" width="200" height="80" rx="8" class="node-rect" style="fill:url(#gradFunction); stroke:#8b5cf6;"/>
+            <text x="740" y="470" text-anchor="middle" class="node-text-title">⚡ sod-processor</text>
+            <text x="740" y="486" text-anchor="middle" class="node-text-sub">256MB &middot; Loader (Step 7.4)</text>
+          </g>
+
+          <!-- Row 2: HCM Connector Sync -->
+          <g class="node-item node-function-trigger">
+            <rect x="80" y="620" width="200" height="80" rx="8" class="node-rect" style="fill:url(#gradFunction); stroke:#8b5cf6;"/>
+            <text x="180" y="650" text-anchor="middle" class="node-text-title">⚡ sod-manual-trigger</text>
+            <text x="180" y="666" text-anchor="middle" class="node-text-sub">256MB &middot; Trigger (Step 7.4)</text>
+          </g>
+
+          <g class="node-item node-function-connector">
+            <rect x="360" y="620" width="200" height="80" rx="8" class="node-rect" style="fill:url(#gradFunction); stroke:#8b5cf6;"/>
+            <text x="460" y="650" text-anchor="middle" class="node-text-title">⚡ connector-processor</text>
+            <text x="460" y="666" text-anchor="middle" class="node-text-sub">256MB &middot; HCM Sync (Step 7.4)</text>
+          </g>
+
+          <g class="node-item node-function-status">
+            <rect x="640" y="620" width="200" height="80" rx="8" class="node-rect" style="fill:url(#gradFunction); stroke:#8b5cf6;"/>
+            <text x="740" y="650" text-anchor="middle" class="node-text-title">⚡ sod-run-status</text>
+            <text x="740" y="666" text-anchor="middle" class="node-text-sub">256MB &middot; Run Status (Step 7.4)</text>
+          </g>
+
+          <!-- Row 3: Connectors List -->
+          <g class="node-item node-function-list">
+            <rect x="80" y="800" width="200" height="80" rx="8" class="node-rect" style="fill:url(#gradFunction); stroke:#8b5cf6;"/>
+            <text x="180" y="830" text-anchor="middle" class="node-text-title">⚡ sod-list-connectors</text>
+            <text x="180" y="846" text-anchor="middle" class="node-text-sub">256MB &middot; Connectors (Step 7.4)</text>
+          </g>
+
+          <!-- ATP Database (centered on functions right side) -->
+          <g class="node-item node-database">
+            <rect x="900" y="440" width="330" height="200" rx="10" class="node-rect" style="fill:url(#gradDatabase); stroke:#fb923c; stroke-width:2;"/>
+            <text x="1065" y="475" text-anchor="middle" class="node-text-title" style="font-size:14px;">💾 ATP Database</text>
+            <text x="1065" y="495" text-anchor="middle" class="node-text-sub">sod-assessment-adb (Step 4.2)</text>
+            <text x="1065" y="511" text-anchor="middle" class="node-text-sub">OLTP &middot; Private Endpoint Only</text>
+            <text x="1065" y="535" text-anchor="middle" class="node-text-desc" fill="#fb923c">Stores employee data, roles, runs,</text>
+            <text x="1065" y="550" text-anchor="middle" class="node-text-desc" fill="#fb923c">violations, and exceptions</text>
+          </g>
+
+          <!-- IAM Dynamic Groups & Policies -->
+          <g class="node-item node-iam">
+            <rect x="900" y="670" width="330" height="110" rx="10" class="node-rect" style="fill:#1e1b4b; stroke:#6366f1; stroke-width:1.5;"/>
+            <text x="1065" y="695" text-anchor="middle" class="node-text-title" style="fill:#a5b4fc;">🔐 IAM Groups &amp; Policies</text>
+            <text x="1065" y="715" text-anchor="middle" class="node-text-sub">sod-functions-dg &middot; sod-adb-dg (Step 6)</text>
+            <text x="1065" y="731" text-anchor="middle" class="node-text-sub" fill="#a5b4fc">Policies authorize: secrets, queues,</text>
+            <text x="1065" y="745" text-anchor="middle" class="node-text-sub" fill="#a5b4fc">object storage access &amp; invoke</text>
+          </g>
+
+          <!-- OCIR Container Registry -->
+          <g class="node-item node-ocir">
+            <rect x="900" y="800" width="330" height="80" rx="10" class="node-rect" style="fill:#1e1b4b; stroke:#f59e0b; stroke-width:1.5;"/>
+            <text x="1065" y="825" text-anchor="middle" class="node-text-title" style="fill:#fcd34d;">📦 OCIR Container Registry</text>
+            <text x="1065" y="841" text-anchor="middle" class="node-text-sub">sod-repo (Step 7.1/7.2) &middot; Private Docker images</text>
+          </g>
+
+          <!-- Environment variables shared note -->
+          <rect x="50" y="905" width="1180" height="40" rx="8" style="fill:rgba(139,92,246,0.06); stroke:rgba(139,92,246,0.18); stroke-width:1;"/>
+          <text x="640" y="929" text-anchor="middle" class="node-text-sub" fill="#ddd6fe">⚙️ App Env Config: DB_SECRET_OCID &middot; ATP_CONNECTION_STRING &middot; INGESTION_QUEUE_OCID &middot; CONNECTOR_QUEUE_OCID &middot; BUCKET_NAME — Step 7.5</text>
+
+          <!-- ──────────────────────────────────────────────────────── -->
+          <!--  ZONE: ORACLE SERVICES NETWORK (OSN)                     -->
+          <!-- ──────────────────────────────────────────────────────── -->
+          <rect x="1280" y="125" width="260" height="930" rx="16" class="svg-bg-services" style="fill:rgba(245,158,11,0.02); stroke:rgba(245,158,11,0.25); stroke-width:1.5;"/>
+          <text x="1296" y="148" class="zone-header" fill="#fbbf24">Oracle Services Network (OSN)</text>
+
+          <!-- Object Storage -->
+          <g class="node-item node-storage">
+            <rect x="1300" y="145" width="220" height="75" rx="8" class="node-rect" style="fill:url(#gradStorage); stroke:#f59e0b;"/>
+            <text x="1410" y="170" text-anchor="middle" class="node-text-title" style="font-size:10.5px;">📂 Object Storage Bucket</text>
+            <text x="1410" y="186" text-anchor="middle" class="node-text-sub" style="font-size:9.5px;">landing-zone-assessment</text>
+            <text x="1410" y="200" text-anchor="middle" class="node-text-sub" style="font-size:9px;">Standard &middot; Events ✓ (Step 4.1)</text>
+          </g>
+
+          <!-- OCI Events -->
+          <g class="node-item node-event">
+            <rect x="1300" y="242" width="220" height="75" rx="8" class="node-rect" style="fill:url(#gradEvent); stroke:#fb7185;"/>
+            <text x="1410" y="267" text-anchor="middle" class="node-text-title" style="font-size:11px;">⚡ OCI Events Service</text>
+            <text x="1410" y="283" text-anchor="middle" class="node-text-sub" style="font-size:9.5px;">sod-object-upload-trigger</text>
+            <text x="1410" y="297" text-anchor="middle" class="node-text-sub" style="font-size:9px;">Object Create &rarr; Step 9</text>
+          </g>
+
+          <!-- Queues -->
+          <!-- Ingestion Queue -->
+          <g class="node-item node-queue-ingest">
+            <rect x="1300" y="338" width="220" height="96" rx="8" class="node-rect" style="fill:url(#gradStorage); stroke:#f59e0b;"/>
+            <text x="1410" y="361" text-anchor="middle" class="node-text-title" style="font-size:11px;">✉️ Ingestion Queue</text>
+            <text x="1410" y="377" text-anchor="middle" class="node-text-sub" style="font-size:9px;">sod-ingestion-queue (Step 5.3)</text>
+            <text x="1410" y="391" text-anchor="middle" class="node-text-sub" style="font-size:9px;">Visibility: 300s &middot; Ingest Tasks</text>
+          </g>
+
+          <!-- Connector Queue -->
+          <g class="node-item node-queue-connect">
+            <rect x="1300" y="452" width="220" height="96" rx="8" class="node-rect" style="fill:url(#gradStorage); stroke:#f59e0b;"/>
+            <text x="1410" y="475" text-anchor="middle" class="node-text-title" style="font-size:11px;">✉️ Connector Queue</text>
+            <text x="1410" y="491" text-anchor="middle" class="node-text-sub" style="font-size:9px;">sod-connector-queue (Step 5.4)</text>
+            <text x="1410" y="505" text-anchor="middle" class="node-text-sub" style="font-size:9px;">Visibility: 600s &middot; Sync Jobs</text>
+          </g>
+
+          <!-- DLQ Frame -->
+          <rect x="1300" y="565" width="220" height="50" rx="8" style="fill:#1a0a00; stroke:#f59e0b; stroke-width:1; stroke-dasharray:3 2;"/>
+          <text x="1410" y="582" text-anchor="middle" class="label-comp" style="font-size:9px; fill:#fcd34d;">&#128680; DLQs &middot; sod-ingestion-dlq</text>
+          <text x="1410" y="596" text-anchor="middle" class="label-comp" style="font-size:9px; fill:#fcd34d;">sod-connector-dlq &mdash; Step 5.1/5.2</text>
+
+          <!-- KMS Vault -->
+          <g class="node-item node-vault">
+            <rect x="1300" y="635" width="220" height="75" rx="8" class="node-rect" style="fill:url(#gradStorage); stroke:#f59e0b;"/>
+            <text x="1410" y="657" text-anchor="middle" class="node-text-title" style="font-size:11px;">🔐 KMS Key Vault</text>
+            <text x="1410" y="673" text-anchor="middle" class="node-text-sub" style="font-size:9px;">sod-kms-vault &middot; db-password</text>
+            <text x="1410" y="687" text-anchor="middle" class="node-text-sub" style="font-size:9px;">hcm-credentials &mdash; Step 3</text>
+          </g>
+
+          <!-- Monitoring & Alarms (Step 10) -->
+          <rect x="1300" y="730" width="220" height="210" rx="10" style="fill:rgba(239,68,68,0.03); stroke:#f87171; stroke-width:1.5; stroke-dasharray:4 3;"/>
+          <text x="1410" y="750" text-anchor="middle" class="zone-header" fill="#f87171" style="font-size:10px;">Monitoring &amp; Alerts (Step 10)</text>
+
+          <!-- Topic & Alarms text details -->
+          <g class="node-item node-monitoring">
+            <rect x="1310" y="765" width="200" height="160" rx="6" style="fill:url(#gradMonitoring); stroke:#ef4444; stroke-width:1;"/>
+            <text x="1410" y="785" text-anchor="middle" class="node-text-title" style="font-size:10px; fill:#fca5a5;">🔔 sod-alert-topic</text>
+            <text x="1410" y="805" text-anchor="middle" class="node-text-title" style="font-size:10px;">🚨 6 Alarms (Step 10.2)</text>
+            <text x="1410" y="825" text-anchor="middle" class="node-text-sub" style="font-size:8.5px;" fill="#fca5a5">DLQ Depth &middot; Process Errors</text>
+            <text x="1410" y="840" text-anchor="middle" class="node-text-sub" style="font-size:8.5px;" fill="#fca5a5">DB CPU &middot; Storage Critical</text>
+            <text x="1410" y="865" text-anchor="middle" class="node-text-desc" style="font-size:8.5px; fill:#f87171;">Email subscription active</text>
+            <text x="1410" y="880" text-anchor="middle" class="node-text-desc" style="font-size:8px; fill:#94a3b8;">Namespace: oci_queue</text>
+            <text x="1410" y="895" text-anchor="middle" class="node-text-desc" style="font-size:8px; fill:#94a3b8;">oci_functions &middot; oci_adb</text>
+          </g>
+
+          <!-- ──────────────────────────────────────────────────────── -->
+          <!--  MAPPED PIPELINE LINES (Motherboard-Routed, Zero Overlap)-->
+          <!-- ──────────────────────────────────────────────────────── -->
+          <!-- Line 1: Inbound Client Ingestion Call (Internet Client to Internet GW to API Gateway) -->
+          <path d="M190,90 L190,205 L135,205 L135,145 M135,195 L135,225 L540,225 L540,260" class="flow-line step-line-1" style="stroke:#10b981; marker-end:url(#arrowGreen);"/>
+          <g class="step-badge-1">
+            <circle cx="190" cy="114" r="11" fill="#10b981"/><text x="190" y="118" class="flow-step-text">1</text>
+            <text x="210" y="105" class="arrow-marker-label" fill="#10b981" text-anchor="start">Client Ingest Request</text>
+          </g>
+
+          <!-- Line 2: API Gateway forwards payload to Receiver Function -->
+          <path d="M540,330 L540,380 L180,380 L180,440" class="flow-line step-line-2" style="stroke:#8b5cf6; marker-end:url(#arrowPurple);"/>
+          <g class="step-badge-2">
+            <circle cx="280" cy="384" r="11" fill="#8b5cf6"/><text x="280" y="388" class="flow-step-text">2</text>
+            <text x="280" y="367" text-anchor="middle" class="arrow-marker-label" fill="#8b5cf6">Route to Function</text>
+          </g>
+
+          <!-- Line 3: Receiver Function writes audit payload to Object Storage (Bypasses enqueuer/DB by routing around) -->
+          <path d="M180,520 L180,540 L880,540 L880,425 L1270,425 L1270,182 L1300,182" class="flow-line step-line-3" style="stroke:#f59e0b; marker-end:url(#arrowAmber);"/>
+          <g class="step-badge-3">
+            <circle cx="880" cy="544" r="11" fill="#f59e0b"/><text x="880" y="548" class="flow-step-text">3</text>
+            <text x="880" y="525" text-anchor="middle" class="arrow-marker-label">Upload to Bucket</text>
+          </g>
+
+          <!-- Line 4: Object Storage emits create event to OCI Events Service -->
+          <path d="M1410,220 L1410,242" class="flow-line step-line-4" style="stroke:#fb7185; stroke-dasharray:4 3; marker-end:url(#arrowRose);"/>
+          <g class="step-badge-4">
+            <circle cx="1410" cy="235" r="11" fill="#fb7185"/><text x="1410" y="239" class="flow-step-text">4</text>
+          </g>
+
+          <!-- Line 5: OCI Events invokes sod-enqueuer function (Bypasses ATP Database box) -->
+          <path d="M1300,280 L1270,280 L1270,395 L460,395 L460,440" class="flow-line step-line-5" style="stroke:#fb7185; stroke-dasharray:4 3; marker-end:url(#arrowRose);"/>
+          <g class="step-badge-5">
+            <circle cx="690" cy="284" r="11" fill="#fb7185"/><text x="690" y="288" class="flow-step-text">5</text>
+            <text x="690" y="265" text-anchor="middle" class="arrow-marker-label" fill="#fb7185">Synchronous Invoke</text>
+          </g>
+
+          <!-- Line 6: Enqueuer pushes message to Ingestion Queue (Bypasses database box) -->
+          <path d="M460,520 L460,555 L1270,555 L1270,386 L1300,386" class="flow-line step-line-6" style="stroke:#f59e0b; marker-end:url(#arrowAmber);"/>
+          <g class="step-badge-6">
+            <circle cx="1270" cy="534" r="11" fill="#f59e0b"/><text x="1270" y="538" class="flow-step-text">6</text>
+            <text x="1250" y="520" text-anchor="end" class="arrow-marker-label">Enqueue File Name</text>
+          </g>
+
+          <!-- Line 7: Ingestion Queue to sod-processor (Bypasses database box) -->
+          <path d="M1300,386 L1270,386 L1270,410 L740,410 L740,440" class="flow-line step-line-7" style="stroke:#3b82f6; marker-end:url(#arrowBlue);"/>
+          <g class="step-badge-7">
+            <circle cx="1090" cy="414" r="11" fill="#3b82f6"/><text x="1090" y="418" class="flow-step-text">7</text>
+            <text x="1090" y="395" text-anchor="middle" class="arrow-marker-label">Worker Dequeue</text>
+          </g>
+
+          <!-- Line 8: Processor loads data into ATP DB -->
+          <path d="M740,520 L740,540 L880,540 L880,480 L900,480" class="flow-line step-line-8" style="stroke:#3b82f6; marker-end:url(#arrowBlue);"/>
+          <g class="step-badge-8">
+            <circle cx="810" cy="544" r="11" fill="#3b82f6"/><text x="810" y="548" class="flow-step-text">8</text>
+            <text x="810" y="525" text-anchor="middle" class="arrow-marker-label">SQL Insert</text>
+          </g>
+
+          <!-- Line 9: Manual connector trigger routing -->
+          <path d="M540,330 L540,380 L320,380 L320,570 L180,570 L180,620" class="flow-line step-line-9" style="stroke:#10b981; marker-end:url(#arrowGreen);"/>
+          <g class="step-badge-9">
+            <circle cx="320" cy="504" r="11" fill="#10b981"/><text x="320" y="508" class="flow-step-text">9</text>
+            <text x="320" y="485" text-anchor="middle" class="arrow-marker-label" fill="#10b981">Manual Sync</text>
+          </g>
+
+          <!-- Line 10: Manual trigger enqueues Connector Job (Bypasses database box) -->
+          <path d="M180,700 L180,750 L1270,750 L1270,500 L1300,500" class="flow-line step-line-10" style="stroke:#f59e0b; marker-end:url(#arrowAmber);"/>
+          <g class="step-badge-10">
+            <circle cx="1270" cy="714" r="11" fill="#f59e0b"/><text x="1270" y="718" class="flow-step-text">10</text>
+            <text x="1250" y="700" text-anchor="end" class="arrow-marker-label">Enqueue Job</text>
+          </g>
+
+          <!-- Line 11: Stored Procedures / Scheduler enqueue jobs (Bypasses database box) -->
+          <path d="M1065,640 L1065,750 L1270,750 L1270,500 L1300,500" class="flow-line step-line-10" style="stroke:#f59e0b; marker-end:url(#arrowAmber);"/>
+
+          <!-- Line 12: Connector Queue to connector-processor (Bypasses database box) -->
+          <path d="M1410,548 L1410,750 L600,750 L600,585 L460,585 L460,620" class="flow-line step-line-11" style="stroke:#3b82f6; marker-end:url(#arrowBlue);"/>
+          <g class="step-badge-11">
+            <circle cx="600" cy="724" r="11" fill="#3b82f6"/><text x="600" y="728" class="flow-step-text">11</text>
+            <text x="600" y="705" text-anchor="middle" class="arrow-marker-label">Dequeue Sync Job</text>
+          </g>
+
+          <!-- Line 13: connector-processor calls External HCM API (via NAT Gateway) -->
+          <path d="M460,700 L460,750 L320,750 L320,200 L305,200" class="flow-line step-line-12" style="stroke:#3b82f6;"/>
+          <path d="M305,145 L305,110 L1400,110 L1400,90" class="flow-line step-line-12" style="stroke:#3b82f6; marker-end:url(#arrowBlue);"/>
+          <g class="step-badge-12">
+            <circle cx="305" cy="114" r="11" fill="#3b82f6"/><text x="305" y="118" class="flow-step-text">12</text>
+            <text x="305" y="99" text-anchor="middle" class="arrow-marker-label">outbound NAT call</text>
+          </g>
+
+          <!-- Line 14: connector-processor deposits data to storage bucket -->
+          <path d="M460,700 L460,750 L880,750 L880,425 L1270,425 L1270,182 L1300,182" class="flow-line step-line-13" style="stroke:#f59e0b; marker-end:url(#arrowAmber);"/>
+          <g class="step-badge-13">
+            <circle cx="880" cy="724" r="11" fill="#f59e0b"/><text x="880" y="728" class="flow-step-text">13</text>
+            <text x="880" y="705" text-anchor="middle" class="arrow-marker-label">Deposit HCM File</text>
+          </g>
+
+          <!-- Service Gateway private backbone link label on right -->
+          <path d="M485,165 L485,140" style="stroke:#f59e0b; stroke-width:1.5; fill:none; stroke-dasharray:3 2;"/>
+        </svg>
+
+      </div>
+
+      <p style="font-size:12.5px; color:var(--text-muted); margin:-0.5rem 0 1.5rem 0; text-align:center;">💡 <strong>Interactive Hint:</strong> Hover over any numbered step card below to light up its exact data flow path and process endpoints above!</p>
+
+      <div class="flow-detail-grid">
+        <div class="transaction-card">
+          <h3>Ingestion Pipeline Process (Steps 1–8)</h3>
+          <div class="step-list">
+            <div class="step-list-item" onmouseover="activateStepHighlight(1)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#10b981;">1</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Inbound Upload Request</div>
+                The Client Portal triggers an upload, routing a POST call to API Gateway <code>/ingest</code> via the Internet Gateway.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(2)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#8b5cf6;">2</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Routing to Receiver</div>
+                The API Gateway processes routing rules and forwards the payload downstream to <code>sod-api-receiver</code>.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(3)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#f59e0b;">3</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Save to Bucket</div>
+                The receiver function streams the audit file into Object Storage <code>landing-zone-assessment</code>.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(4)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#fb7185;">4</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Object Event Emitter</div>
+                The Object Storage bucket triggers an automatic OCI Object Create event notification.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(5)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#fb7185;">5</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Enqueuer Call</div>
+                OCI Events invokes <code>sod-enqueuer</code> containing the metadata of the newly added file.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(6)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#f59e0b;">6</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Ingestion Queue Dispatch</div>
+                The enqueuer writes the file reference payload directly onto the secure <code>sod-ingestion-queue</code>.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(7)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#3b82f6;">7</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Worker Queue Poll</div>
+                The loader microservice <code>sod-processor</code> polls the queue, downloads the file, and prepares it.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(8)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#3b82f6;">8</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Database Bulk Staging</div>
+                The processor function streams parsing output rows into staging tables inside the private ATP Database.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="transaction-card">
+          <h3>HCM Sync Process (Steps 9–13)</h3>
+          <div class="step-list">
+            <div class="step-list-item" onmouseover="activateStepHighlight(9)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#10b981;">9</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Manual Sync Trigger</div>
+                Operators POST a manual trigger request to API Gateway <code>/connectors/run</code> &rarr; <code>sod-manual-trigger</code>.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(10)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#f59e0b;">10</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Sync Job Enqueued</div>
+                The trigger function (or the database scheduler cron) writes the sync job metadata to <code>sod-connector-queue</code>.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(11)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#3b82f6;">11</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Worker Job Dequeue</div>
+                The background processor <code>connector-processor</code> dequeues the job and requests vault tokens.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(12)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#3b82f6;">12</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Outbound NAT call</div>
+                The connector processor exits the VCN via the NAT Gateway to extract data from external HCM APIs.
+              </div>
+            </div>
+            <div class="step-list-item" onmouseover="activateStepHighlight(13)" onmouseout="deactivateStepHighlight()">
+              <div class="step-num-pill" style="background:#f59e0b;">13</div>
+              <div class="step-text-content">
+                <div class="step-text-title">Deposit HCM File</div>
+                The sync worker drops the extracted role config file into the landing storage bucket, which fires Step 4 automatically.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="tab-ingestion"     class="tab-content">
       <div class="diagram-wrapper">
         <svg viewBox="0 0 1000 620" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -712,70 +1350,121 @@
     <!-- ──────────────────────────────────────────────────────── -->
     <div id="tab-topology" class="tab-content">
       <div class="diagram-wrapper">
-        <svg viewBox="0 0 1000 480" xmlns="http://www.w3.org/2000/svg">
-          <!-- Main boundaries -->
-          <rect x="20" y="20" width="560" height="440" rx="16" class="svg-bg-box"/>
+        <svg viewBox="0 0 1000 520" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arrowHead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill="#3b82f6"/></marker>
+          </defs>
+
+          <!-- Main VCN Box -->
+          <rect x="20" y="20" width="670" height="480" rx="16" class="svg-bg-box"/>
           <text x="36" y="45" class="zone-header" fill="#3b82f6">sod-network-vcn (10.0.0.0/16) — Step 1.1</text>
 
-          <!-- Gateways inside VCN -->
-          <rect x="40" y="70" width="150" height="50" rx="6" class="node-rect node-gateway"/>
-          <text x="115" y="100" text-anchor="middle" class="label-comp" fill="#fff" style="font-size:11px;">🌐 Internet GW</text>
+          <!-- Gateways inside VCN (Step 1.2, 1.3, 1.4) -->
+          <!-- Internet GW -->
+          <rect x="40" y="70" width="150" height="60" rx="8" class="node-rect node-gateway" style="fill:#0f3460; stroke:#3b82f6;"/>
+          <text x="115" y="97" text-anchor="middle" class="node-text-title">🌐 Internet GW</text>
+          <text x="115" y="113" text-anchor="middle" class="node-text-sub">sod-internet-gateway</text>
+          <text x="115" y="124" text-anchor="middle" class="node-text-sub" fill="#60a5fa">Step 1.2</text>
+
+          <!-- NAT GW -->
+          <rect x="40" y="190" width="150" height="60" rx="8" class="node-rect node-gateway" style="fill:#0f3460; stroke:#60a5fa;"/>
+          <text x="115" y="217" text-anchor="middle" class="node-text-title">🔄 NAT Gateway</text>
+          <text x="115" y="233" text-anchor="middle" class="node-text-sub">sod-nat-gateway</text>
+          <text x="115" y="244" text-anchor="middle" class="node-text-sub" fill="#60a5fa">Step 1.3</text>
+
+          <!-- Service GW -->
+          <rect x="40" y="310" width="150" height="60" rx="8" class="node-rect node-gateway" style="fill:#0f3460; stroke:#60a5fa;"/>
+          <text x="115" y="337" text-anchor="middle" class="node-text-title">🔗 Service GW</text>
+          <text x="115" y="353" text-anchor="middle" class="node-text-sub">sod-service-gateway</text>
+          <text x="115" y="364" text-anchor="middle" class="node-text-sub" fill="#60a5fa">Step 1.4</text>
+
+          <!-- Route Tables (Step 2.1, 2.2) -->
+          <!-- Public RT -->
+          <rect x="230" y="70" width="160" height="60" rx="8" class="node-rect" style="fill:#16203a; stroke:#3b82f6;"/>
+          <text x="310" y="97" text-anchor="middle" class="node-text-title">📋 Public RT</text>
+          <text x="310" y="113" text-anchor="middle" class="node-text-sub">sod-public-route-table</text>
+          <text x="310" y="124" text-anchor="middle" class="node-text-sub" fill="#60a5fa">Step 2.1</text>
+
+          <!-- Private RT -->
+          <rect x="230" y="220" width="160" height="70" rx="8" class="node-rect" style="fill:#16203a; stroke:#3b82f6;"/>
+          <text x="310" y="247" text-anchor="middle" class="node-text-title">📋 Private RT</text>
+          <text x="310" y="263" text-anchor="middle" class="node-text-sub">sod-private-route-table</text>
+          <text x="310" y="274" text-anchor="middle" class="node-text-sub" fill="#60a5fa">Step 2.2</text>
+
+          <!-- Subnets and Resources -->
+          <!-- Public Subnet (Step 2.3) -->
+          <rect x="420" y="70" width="250" height="150" class="svg-bg-sub-pub"/>
+          <text x="432" y="90" class="zone-header" fill="#34d399">sod-public-subnet (10.0.1.0/24)</text>
+          <text x="432" y="103" class="node-text-sub" fill="#10b981">Step 2.3</text>
           
-          <rect x="210" y="70" width="150" height="50" rx="6" class="node-rect node-gateway"/>
-          <text x="285" y="100" text-anchor="middle" class="label-comp" fill="#fff" style="font-size:11px;">🔄 NAT Gateway</text>
+          <!-- API GW (Step 8.1) -->
+          <rect x="440" y="120" width="210" height="70" rx="8" class="node-rect node-apigw"/>
+          <text x="545" y="147" text-anchor="middle" class="node-text-title">🌐 API Gateway</text>
+          <text x="545" y="163" text-anchor="middle" class="node-text-sub">sod-api-gateway</text>
+          <text x="545" y="175" text-anchor="middle" class="node-text-sub" fill="#a7f3d0">Step 8.1</text>
 
-          <rect x="380" y="70" width="170" height="50" rx="6" class="node-rect node-gateway"/>
-          <text x="465" y="100" text-anchor="middle" class="label-comp" fill="#fff" style="font-size:11px;">🔗 Service Gateway</text>
-
-          <!-- Subnets -->
-          <rect x="40" y="140" width="510" height="100" class="svg-bg-sub-pub"/>
-          <text x="52" y="160" class="zone-header" fill="#34d399">sod-public-subnet (10.0.1.0/24) — Step 2.3</text>
+          <!-- Private Subnet (Step 2.4) -->
+          <rect x="420" y="240" width="250" height="240" class="svg-bg-sub-priv"/>
+          <text x="432" y="260" class="zone-header" fill="#a78bfa">sod-private-subnet (10.0.2.0/24)</text>
+          <text x="432" y="273" class="node-text-sub" fill="#a78bfa">Step 2.4</text>
           
-          <!-- API GW node -->
-          <rect x="180" y="175" width="220" height="50" rx="8" class="node-rect node-apigw"/>
-          <text x="290" y="205" text-anchor="middle" class="node-text-title">🌐 API Gateway (sod-api-gateway)</text>
-
-          <rect x="40" y="260" width="510" height="180" class="svg-bg-sub-priv"/>
-          <text x="52" y="280" class="zone-header" fill="#a78bfa">sod-private-subnet (10.0.2.0/24) — Step 2.4</text>
+          <!-- DB (Step 4.2) -->
+          <rect x="440" y="290" width="210" height="70" rx="8" class="node-rect node-database"/>
+          <text x="545" y="317" text-anchor="middle" class="node-text-title">💾 ATP Database</text>
+          <text x="545" y="333" text-anchor="middle" class="node-text-sub">sodassessdb</text>
+          <text x="545" y="345" text-anchor="middle" class="node-text-sub" fill="#fed7aa">Step 4.2</text>
           
-          <!-- Private resources -->
-          <rect x="60" y="300" width="200" height="55" rx="6" class="node-rect node-function"/>
-          <text x="160" y="325" text-anchor="middle" class="node-text-title">⚡ Functions App (sod-app)</text>
-          <text x="160" y="342" text-anchor="middle" class="node-text-sub">7 deployable functions</text>
+          <!-- Functions App (Step 7.3) -->
+          <rect x="440" y="385" width="210" height="70" rx="8" class="node-rect node-function"/>
+          <text x="545" y="412" text-anchor="middle" class="node-text-title">⚡ Functions App</text>
+          <text x="545" y="428" text-anchor="middle" class="node-text-sub">sod-app (7 functions)</text>
+          <text x="545" y="440" text-anchor="middle" class="node-text-sub" fill="#ddd6fe">Step 7.3</text>
 
-          <rect x="300" y="300" width="220" height="55" rx="6" class="node-rect node-database"/>
-          <text x="410" y="325" text-anchor="middle" class="node-text-title">💾 ATP DB (sod-assessment-adb)</text>
-          <text x="410" y="342" text-anchor="middle" class="node-text-sub">Private endpoint only</text>
+          <!-- OCI Managed Services Network (Private Backbone) -->
+          <rect x="710" y="20" width="270" height="480" rx="16" class="svg-bg-services"/>
+          <text x="726" y="45" class="zone-header" fill="#fbbf24">Oracle Services Network</text>
+          
+          <!-- Object Storage -->
+          <rect x="730" y="70" width="230" height="60" rx="8" class="node-rect node-storage"/>
+          <text x="845" y="97" text-anchor="middle" class="node-text-title">📂 Object Storage Bucket</text>
+          <text x="845" y="113" text-anchor="middle" class="node-text-sub">landing-zone-assessment (Step 4.1)</text>
 
-          <!-- Routes overlay lines -->
-          <path d="M115,120 L115,140" style="stroke:#10b981; stroke-width:1.5; fill:none;"/>
-          <path d="M285,120 L285,260" style="stroke:#8b5cf6; stroke-width:1.5; fill:none; stroke-dasharray:3 2;"/>
-          <path d="M465,120 L465,260" style="stroke:#f59e0b; stroke-width:1.5; fill:none; stroke-dasharray:3 2;"/>
+          <!-- Queues -->
+          <rect x="730" y="150" width="230" height="60" rx="8" class="node-rect node-storage"/>
+          <text x="845" y="177" text-anchor="middle" class="node-text-title">✉️ Queues (Ingestion/Sync)</text>
+          <text x="845" y="193" text-anchor="middle" class="node-text-sub">sod-ingestion-queue (Step 5.3)</text>
 
-          <!-- Services Zone -->
-          <rect x="610" y="20" width="370" height="440" rx="16" class="svg-bg-services"/>
-          <text x="626" y="45" class="zone-header" fill="#fbbf24">Oracle Services Network — Step 1.4</text>
+          <!-- Vault -->
+          <rect x="730" y="230" width="230" height="60" rx="8" class="node-rect node-storage"/>
+          <text x="845" y="257" text-anchor="middle" class="node-text-title">🔐 KMS Key Vault</text>
+          <text x="845" y="273" text-anchor="middle" class="node-text-sub">sod-kms-vault &amp; secrets (Step 3)</text>
 
-          <rect x="630" y="70" width="330" height="60" rx="8" class="node-rect node-storage"/>
-          <text x="795" y="97" text-anchor="middle" class="node-text-title">📂 Object Storage Bucket</text>
-          <text x="795" y="113" text-anchor="middle" class="node-text-sub">landing-zone-assessment (Step 4.1)</text>
+          <!-- ──────────────────────────────────────── -->
+          <!-- CONNECTOR ARROWS                         -->
+          <!-- ──────────────────────────────────────── -->
+          <!-- Public Subnet -> Public RT (Step 2.3 Binding) -->
+          <path d="M420,145 L405,145 L405,100 L396,100" class="flow-line"/>
+          <text x="408" y="130" text-anchor="middle" class="arrow-marker-label" style="font-size:8px;">bind (2.3)</text>
 
-          <rect x="630" y="150" width="330" height="60" rx="8" class="node-rect node-storage"/>
-          <text x="795" y="177" text-anchor="middle" class="node-text-title">✉️ Queues (Ingestion &amp; Connector)</text>
-          <text x="795" y="193" text-anchor="middle" class="node-text-sub">sod-ingestion-queue &middot; sod-connector-queue</text>
+          <!-- Private Subnet -> Private RT (Step 2.4 Binding) -->
+          <path d="M420,365 L405,365 L405,255 L396,255" class="flow-line"/>
+          <text x="408" y="320" text-anchor="middle" class="arrow-marker-label" style="font-size:8px;">bind (2.4)</text>
 
-          <rect x="630" y="230" width="330" height="60" rx="8" class="node-rect node-storage"/>
-          <text x="795" y="257" text-anchor="middle" class="node-text-title">🔐 KMS Key Vault &amp; Secrets</text>
-          <text x="795" y="273" text-anchor="middle" class="node-text-sub">sod-kms-vault &middot; db-password (Step 3)</text>
+          <!-- Public RT -> Internet GW (Step 2.1 Route Rule) -->
+          <path d="M230,100 L196,100" class="flow-line"/>
+          <text x="213" y="92" text-anchor="middle" class="arrow-marker-label">0.0.0.0/0 (2.1)</text>
 
-          <!-- Legend overlay inside Topology -->
-          <rect x="630" y="310" width="330" height="130" rx="8" style="fill:rgba(255,255,255,0.02); stroke:rgba(255,255,255,0.08); stroke-width:1;"/>
-          <text x="650" y="335" class="node-text-title" style="fill:#3b82f6;">Network Security Topology Rules</text>
-          <text x="650" y="360" class="node-text-desc">&#10003; Public subnet accepts only port 443 (HTTPS)</text>
-          <text x="650" y="380" class="node-text-desc">&#10003; Private subnet has NO public IP addresses assigned</text>
-          <text x="650" y="400" class="node-text-desc">&#10003; Functions inside private subnet reach DB internally</text>
-          <text x="650" y="420" class="node-text-desc">&#10003; Databases accept connects only from VCN CIDR</text>
+          <!-- Private RT -> NAT GW (Step 2.2 Route Rule) -->
+          <path d="M230,235 L215,235 L215,220 L196,220" class="flow-line"/>
+          <text x="213" y="210" text-anchor="middle" class="arrow-marker-label">0.0.0.0/0 (2.2)</text>
 
+          <!-- Private RT -> Service GW (Step 2.2 Route Rule) -->
+          <path d="M230,275 L215,275 L215,340 L196,340" class="flow-line"/>
+          <text x="213" y="320" text-anchor="middle" class="arrow-marker-label">OSN (2.2)</text>
+
+          <!-- Service GW -> OSN Services Backbone Link -->
+          <path d="M115,370 L115,485 L795,485 L795,300" class="flow-line-dashed"/>
+          <text x="240" y="480" text-anchor="start" class="arrow-marker-label" style="fill:#94a3b8;">Service GW OSN Routing Backbone Link (Step 1.4)</text>
         </svg>
       </div>
 
@@ -809,6 +1498,14 @@
     <!--  LEGEND / INSTRUCTION INTERACTIVE SCRIPTS                -->
     <!-- ──────────────────────────────────────────────────────── -->
     <script>
+      
+      // Initialize layout tabs correctly on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        switchArchitectureTab('unified');
+      });
+
+        
+        
       function switchArchitectureTab(tabId) {
         // Hide all contents
         document.querySelectorAll('.tab-content').forEach(el => {
@@ -823,6 +1520,68 @@
         document.getElementById('tab-' + tabId).classList.add('active');
         document.getElementById('btn-' + tabId).classList.add('active');
       }
+
+      // Interactive Highlighting Utilities
+      function activateStepHighlight(stepNum) {
+        const svg = document.getElementById('architectureMap');
+        if (!svg) return;
+        
+        // Set root active class
+        svg.classList.add('highlight-active');
+        
+        // Clear previous step classes
+        for (let i = 1; i <= 13; i++) {
+          svg.classList.remove('show-step-' + i);
+        }
+        
+        // Add current active step class
+        svg.classList.add('show-step-' + stepNum);
+        
+        // Highlight active list item card
+        event.currentTarget.classList.add('active-desc-card');
+      }
+
+      function deactivateStepHighlight() {
+        const svg = document.getElementById('architectureMap');
+        if (!svg) return;
+        
+        svg.classList.remove('highlight-active');
+        for (let i = 1; i <= 13; i++) {
+          svg.classList.remove('show-step-' + i);
+        }
+        
+        // Remove hover card highlights
+        document.querySelectorAll('.step-list-item').forEach(el => {
+          el.classList.remove('active-desc-card');
+        });
+      }
+
+      // Filter Flows
+      function quickFilterFlow(flowType) {
+        const svg = document.getElementById('architectureMap');
+        if (!svg) return;
+        
+        // Deactivate temporary highlights
+        deactivateStepHighlight();
+        
+        if (flowType === 'all') {
+          svg.classList.remove('highlight-active');
+          return;
+        }
+        
+        svg.classList.add('highlight-active');
+        
+        if (flowType === 'ingest') {
+          for (let i = 1; i <= 8; i++) {
+            svg.classList.add('show-step-' + i);
+          }
+        } else if (flowType === 'connector') {
+          for (let i = 9; i <= 13; i++) {
+            svg.classList.add('show-step-' + i);
+          }
+        }
+      }
+
     </script>
   
   </main>
