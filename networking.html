@@ -33,6 +33,8 @@
       <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
       <div class="menu-section">Assessment Engines</div>
       <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
+      <div class="menu-section">Operations</div>
+      <a href="troubleshooting.html" class="menu-item">🔧 Troubleshooting</a>
     </div>
   </aside>
 
@@ -205,7 +207,7 @@
               <span class="crumb active">Create Private Route Table</span>
             </div>
             <p class="step-instruction"><strong>What you're doing:</strong> The private route table has two rules working together. Rule 1 handles outbound traffic to the public internet (e.g. calling an HCM API) — it routes those requests through the NAT Gateway. Rule 2 handles traffic destined for OCI services like Object Storage — it routes those through the Service Gateway, keeping them entirely on Oracle's private network. Together these two rules mean: private resources can reach everything they need, without ever being directly reachable from the internet.</p>
-            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Create a second Route Table and add <strong>two Route Rules</strong> before saving.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Click the <strong>Create Route Table</strong> button to create a brand new, separate Route Table (do not edit the existing public/default one). Add <strong>two Route Rules</strong> before clicking Create.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Route Table Name</span>
@@ -259,6 +261,28 @@
               <div class="field-item"><span class="field-label">Subnet Access</span><div class="value-wrap"><span class="field-value copy-target">Private Subnet (Prohibit Public IPs)</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div></div>
               <div class="field-item"><span class="field-label">Route Table</span><div class="value-wrap"><span class="field-value copy-target">sod-private-route-table</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div></div>
               <div class="field-item"><span class="field-label">DNS Label</span><div class="value-wrap"><span class="field-value copy-target">sodpriv</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2.5 -->
+        <div class="workflow-card" id="step-2-5">
+          <div class="workflow-badge">STEP 2.5</div>
+          <div class="workflow-content">
+            <div class="breadcrumbs">
+              <span class="crumb">sod-network-vcn</span>
+              <span class="crumb">Security Lists</span>
+              <span class="crumb active">Configure Public Security List (HTTPS Ingress)</span>
+            </div>
+            <p class="step-instruction"><strong>What you're doing:</strong> OCI Virtual Cloud Networks enforce firewall policies using Security Lists. The default security list blocks all incoming traffic except port 22 (SSH) and ICMP. Since the API Gateway routes all incoming client traffic over HTTPS, we must add an Ingress rule allowing TCP port <code>443</code> from <code>0.0.0.0/0</code> (all internet sources) on the VCN's default security list (which is shared by the public subnet). Without this rule, client calls to your API endpoints will time out during the TCP connection handshake.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Open your VCN <strong>sod-network-vcn</strong>, click <strong>Security Lists</strong> in the left sidebar, and open <strong>Default Security List for sod-network-vcn</strong>. Click <strong>Add Ingress Rules</strong> and add the rule defined below:</p>
+            <div class="fields-grid">
+              <div class="field-item"><span class="field-label">Source Type</span><div class="value-wrap"><span class="field-value copy-target">CIDR</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div></div>
+              <div class="field-item"><span class="field-label">Source CIDR</span><div class="value-wrap"><span class="field-value copy-target">0.0.0.0/0</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div></div>
+              <div class="field-item"><span class="field-label">IP Protocol</span><div class="value-wrap"><span class="field-value copy-target">TCP</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div></div>
+              <div class="field-item"><span class="field-label">Source Port Range</span><div class="value-wrap"><span class="field-value copy-target">All</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div></div>
+              <div class="field-item"><span class="field-label">Destination Port Range</span><div class="value-wrap"><span class="field-value copy-target">443</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div></div>
+              <div class="field-item"><span class="field-label">Description</span><div class="value-wrap"><span class="field-value copy-target">HTTPS inbound for API Gateway</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div></div>
             </div>
           </div>
         </div>

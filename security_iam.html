@@ -35,6 +35,8 @@
       <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
       <div class="menu-section">Assessment Engines</div>
       <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
+      <div class="menu-section">Operations</div>
+      <a href="troubleshooting.html" class="menu-item">🔧 Troubleshooting</a>
     </div>
   </aside>
 
@@ -71,12 +73,12 @@
               </div>
             </div>
             <p class="step-instruction"><strong>What you're doing:</strong> Creating a Dynamic Group that automatically includes every OCI Function deployed in your compartment. The matching rule uses <code>resource.type = 'fnfunc'</code> to match all Functions, scoped to your specific compartment by its OCID. This group is then granted permissions in Step 6.3 to: read vault secrets (to get the DB password), manage object storage files (to download audit uploads), and use queues (to enqueue/dequeue messages). Without this group, functions would get permission-denied errors when they try to do any of those things.</p>
-            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to <strong>Identity &amp; Security → Dynamic Groups</strong> and click <strong>Create Dynamic Group</strong>. Replace the placeholder with your actual Compartment OCID.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Navigate to **Identity &amp; Security → Domains** (or **Dynamic Groups** if your tenancy is a legacy IAM tenancy without domains). If using Domains, click on your active domain (usually **Default**), and select **Dynamic Groups** from the left navigation panel. Click **Create Dynamic Group** and replace the placeholder with your actual Compartment OCID.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Name</span>
                 <div class="value-wrap">
-                  <span class="field-value copy-target">sod-functions-dg</span>
+                  <span class="field-value copy-target">sod-function-group</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
@@ -103,7 +105,7 @@
               </div>
             </div>
             <p class="step-instruction"><strong>What you're doing:</strong> Creating a second Dynamic Group for the ATP Database instance. The database uses Oracle's <code>DBMS_CLOUD</code> and <code>DBMS_SCHEDULER</code> packages to read files from Object Storage and enqueue messages. For these internal database operations to succeed (when initiated from a stored procedure or package), the database itself needs to be a recognized resource principal. Without this group, database attempts to read from the bucket or write to a queue will be rejected.</p>
-            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Create a second Dynamic Group with the rule below.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Create a second Dynamic Group using the same navigation path as Step 6.1 with the name and rule below.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Name</span>
@@ -147,9 +149,9 @@
               <div class="field-item">
                 <span class="field-label">Policy Statements (5 statements)</span>
                 <div class="value-wrap" style="align-items: flex-start;">
-                  <span class="field-value copy-target" style="font-size: 11.5px; line-height: 1.8; display: block; white-space: pre-wrap;">Allow dynamic-group sod-functions-dg to read secret-bundles in compartment id &lt;compartment_id&gt;
-Allow dynamic-group sod-functions-dg to manage objects in compartment id &lt;compartment_id&gt;
-Allow dynamic-group sod-functions-dg to use queues in compartment id &lt;compartment_id&gt;
+                  <span class="field-value copy-target" style="font-size: 11.5px; line-height: 1.8; display: block; white-space: pre-wrap;">Allow dynamic-group sod-function-group to read secret-bundles in compartment id &lt;compartment_id&gt;
+Allow dynamic-group sod-function-group to manage objects in compartment id &lt;compartment_id&gt;
+Allow dynamic-group sod-function-group to use queues in compartment id &lt;compartment_id&gt;
 Allow service cloudevents to use functions-family in compartment id &lt;compartment_id&gt;
 Allow any-user to use functions-family in compartment id &lt;compartment_id&gt; where request.principal.type = 'apigateway'</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
@@ -196,7 +198,7 @@ Allow dynamic-group sod-adb-dg to use queues in compartment id &lt;compartment_i
 
       <div class="callout accent">
         <div class="callout-title">&#10003; Checkpoint — IAM Complete</div>
-        <p>You should have <strong>2 Dynamic Groups</strong> (<code>sod-functions-dg</code>, <code>sod-adb-dg</code>) and <strong>2 IAM Policies</strong> (<code>sod-functions-policy</code>, <code>sod-adb-policy</code>). Proceed to Step 7 to deploy the containerized functions.</p>
+        <p>You should have <strong>2 Dynamic Groups</strong> (<code>sod-function-group</code>, <code>sod-adb-dg</code>) and <strong>2 IAM Policies</strong> (<code>sod-functions-policy</code>, <code>sod-adb-policy</code>). Proceed to Step 7 to deploy the containerized functions.</p>
       </div>
     </section>
 

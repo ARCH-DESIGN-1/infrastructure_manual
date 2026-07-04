@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Troubleshooting & Debugging — OCI Infrastructure Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+  <style>
+    .cmd-block {
+      background: #0a0f1d;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-left: 3px solid var(--primary);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: #a5f3fc;
+      margin: 1rem 0;
+      overflow-x: auto;
+      position: relative;
+    }
+    .cmd-block .comment {
+      color: #64748b;
+    }
+    .cmd-block .output-section {
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      color: #94a3b8;
+      font-size: 12px;
+    }
+    .cmd-block .finding {
+      color: #f87171;
+      font-weight: 600;
+    }
+    .cmd-block .ok {
+      color: #34d399;
+      font-weight: 600;
+    }
+    .finding-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3);
+      color: #fca5a5;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0.5rem 0;
+    }
+    .ok-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.3);
+      color: #6ee7b7;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0.5rem 0;
+    }
+    .fix-block {
+      background: rgba(16,185,129,0.04);
+      border: 1px solid rgba(16,185,129,0.2);
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      margin-top: 0.75rem;
+    }
+    .fix-block h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #34d399;
+      margin-bottom: 0.5rem;
+    }
+    table.debug-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin: 1rem 0;
+    }
+    table.debug-table th {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 0.6rem 0.9rem;
+      text-align: left;
+      font-weight: 700;
+      color: #94a3b8;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+    table.debug-table td {
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 0.6rem 0.9rem;
+      color: #cbd5e1;
+      vertical-align: top;
+    }
+    table.debug-table tr:nth-child(even) td {
+      background: rgba(255,255,255,0.015);
+    }
+    table.debug-table td code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #a5f3fc;
+    }
+    .section-divider {
+      border: none;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      margin: 2.5rem 0;
+    }
+  </style>
+</head>
+<body>
+  <!-- SIDEBAR NAVIGATION -->
+  <aside>
+    <div class="sidebar-header"><h2>SoD Platform</h2><p>OCI Setup Handbook</p></div>
+    <div class="sidebar-menu">
+      <div class="menu-section">Architecture</div>
+      <a href="index.html" class="menu-item">Overview &amp; Diagrams</a>
+      <div class="menu-section">Infrastructure Setup</div>
+      <a href="networking.html" class="menu-item">1. Networking Setup</a>
+      <a href="storage_vault.html" class="menu-item">2. Storage &amp; Vault</a>
+      <a href="messaging.html" class="menu-item">3. Messaging Queues</a>
+      <a href="security_iam.html" class="menu-item">4. IAM &amp; Policies</a>
+      <div class="menu-section">Application Execution</div>
+      <a href="compute_functions.html" class="menu-item">5. OCIR &amp; Functions</a>
+      <a href="routing.html" class="menu-item">6. API Gateway Routing</a>
+      <a href="events_alarms.html" class="menu-item">7. Events &amp; Alarms</a>
+      <div class="menu-section">Source Codebases</div>
+      <a href="db_bootstrap.html" class="menu-item">8. Database Bootstrap (DML)</a>
+      <a href="db_ddl.html" class="menu-item">9. Table Schemas (DDL)</a>
+      <a href="db_packages.html" class="menu-item">10. PL/SQL Packages</a>
+      <a href="db_procedures.html" class="menu-item">11. Stored Procedures</a>
+      <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
+      <div class="menu-section">Assessment Engines</div>
+      <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
+      <div class="menu-section">Operations</div>
+      <a href="troubleshooting.html" class="menu-item active">🔧 Troubleshooting</a>
+    </div>
+  </aside>
+
+  <main>
+    <header>
+      <div class="badge">Operations Runbook</div>
+      <h1>🔧 Troubleshooting &amp; Debugging</h1>
+      <p class="lead">A real-world debugging runbook that documents every diagnostic command used to identify and resolve issues during the initial deployment of the SoD platform. Use this as a reference whenever an API endpoint is timing out, returning errors, or behaving unexpectedly.</p>
+    </header>
+
+    <section>
+      <!-- ISSUE 1 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 1 — API endpoint keeps loading (gateway timeout)</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> Calling <code>GET /sod/v1/connectors</code> never returns — the browser or curl hangs indefinitely until the API Gateway returns a 504 or 502.<br>
+        <strong>Root cause found:</strong> 3 misconfigurations in the <code>sod-app</code> environment config + missing database ingress rule on the private subnet security list.
+      </p>
+
+      <!-- DEBUG STEP 1 -->
+      <div class="workflow-card" id="debug-1">
+        <div class="workflow-badge">DEBUG 1</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Check current sod-app environment configuration.</strong> The very first step is to verify what environment variables the Functions Application actually has set — misconfigured values here are the most common cause of timeouts.</p>
+          <div class="cmd-block">
+<span class="comment"># Get all config key-value pairs currently set on sod-app</span>
+oci fn application get \
+  --application-id ocid1.fnapp.oc1.ap-mumbai-1.amaaaaaarnlqjtiardxrncpwevjbnpjrjthsj36buvaaladyeipystjp7toa \
+  --query 'data.config'
+
+<div class="output-section">
+<span class="comment"># What was returned (truncated):</span>
+{
+  "ATP_CONNECTION_STRING": "(description= (retry_count=20)...)",
+  "BUCKET_NAME": "sod-landing-zone",
+  "CONNECTOR_QUEUE_OCID": "ocid1.queue...ullfbf5yzptq<span class="finding">-dlq</span>",   &lt;-- ❌ This is a Dead Letter Queue!
+  "DB_SECRET_OCID": "<span class="finding">ocid1.autonomousdatabase</span>...",              &lt;-- ❌ This is the ADB OCID, not a Vault Secret!
+  "INGESTION_QUEUE_OCID": "ocid1.queue...cjviakcgmt2mftq<span class="finding">-dlq</span>",  &lt;-- ❌ This is a Dead Letter Queue!
+  "DB_USER": "sod_admin",
+  "REGION": "ap-mumbai-1"
+}
+</div>
+          </div>
+          <div class="finding-badge">❌ 3 misconfigured values found</div>
+          <table class="debug-table" style="margin-top:0.75rem;">
+            <thead>
+              <tr><th>Variable</th><th>Bad Value (was set to)</th><th>Problem</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>DB_SECRET_OCID</code></td>
+                <td><code>ocid1.autonomousdatabase...</code></td>
+                <td>Was set to the ADB database resource OCID instead of the Vault Secret OCID. Causes <code>SecretsClient.get_secret_bundle()</code> to throw a 404/AuthZ error before the DB connection is even attempted.</td>
+              </tr>
+              <tr>
+                <td><code>INGESTION_QUEUE_OCID</code></td>
+                <td><code>...mftq<strong>-dlq</strong></code></td>
+                <td>Pointing to the Dead Letter Queue instead of the main ingestion queue. Functions trying to <code>put_messages()</code> here will be rejected.</td>
+              </tr>
+              <tr>
+                <td><code>CONNECTOR_QUEUE_OCID</code></td>
+                <td><code>...ptq<strong>-dlq</strong></code></td>
+                <td>Same DLQ issue for the connector queue. The <code>-dlq</code> suffix is the dead letter variant — always use the primary queue OCID.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DEBUG STEP 2 -->
+      <div class="workflow-card" id="debug-2">
+        <div class="workflow-badge">DEBUG 2</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>List all Vault Secrets to get the correct <code>DB_SECRET_OCID</code>.</strong> Use this command to find the OCID of the <code>sod-db-password</code> secret that stores the database password.</p>
+          <div class="cmd-block">
+<span class="comment"># List all secrets in the compartment to identify the correct one</span>
+oci vault secret list \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta
+
+<div class="output-section">
+<span class="comment"># Relevant secret found:</span>
+{
+  "id": "<span class="ok">ocid1.vaultsecret.oc1.ap-mumbai-1.amaaaaaarnlqjtiaayskhu6ykny3jky42inswiqkuwp57uwkrkfvy7uxmfgq</span>",
+  "secret-name": "sod-db-password",   &lt;-- ✅ This is the correct OCID for DB_SECRET_OCID
+  "lifecycle-state": "ACTIVE"
+}
+</div>
+          </div>
+          <div class="ok-badge">✅ Correct Vault Secret OCID identified</div>
+        </div>
+      </div>
+
+      <!-- DEBUG STEP 3 -->
+      <div class="workflow-card" id="debug-3">
+        <div class="workflow-badge">DEBUG 3</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Apply all config fixes in one command.</strong> Update the application config using the OCI CLI, setting the correct Vault Secret OCID, correct queue OCIDs (without <code>-dlq</code>), and all other required values.</p>
+          <div class="cmd-block">
+<span class="comment"># Fix all 3 misconfigurations in one update command</span>
+oci fn application update \
+  --application-id ocid1.fnapp.oc1.ap-mumbai-1.amaaaaaarnlqjtiardxrncpwevjbnpjrjthsj36buvaaladyeipystjp7toa \
+  --config '{
+    "DB_SECRET_OCID":        "ocid1.vaultsecret.oc1.ap-mumbai-1.amaaaaaarnlqjtiaayskhu6ykny3jky42inswiqkuwp57uwkrkfvy7uxmfgq",
+    "ATP_CONNECTION_STRING": "(description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=fgfjmbzr.adb.ap-mumbai-1.oraclecloud.com))(connect_data=(service_name=gd8ea41c6489263_sodadb_high.adb.oraclecloud.com))(security=(ssl_server_cert_dn=\"CN=adb.ap-mumbai-1.oraclecloud.com, O=Oracle Corporation, L=Redwood City, ST=California, C=US\")))",
+    "BUCKET_NAME":           "sod-landing-zone",
+    "DB_USER":               "sod_admin",
+    "REGION":                "ap-mumbai-1",
+    "INGESTION_QUEUE_OCID":  "ocid1.queue.oc1.ap-mumbai-1.amaaaaaarnlqjtiang4yzws2foqbzk24tk5rwsnd5dfs4cjviakcgmt2mftq",
+    "CONNECTOR_QUEUE_OCID":  "ocid1.queue.oc1.ap-mumbai-1.amaaaaaarnlqjtiasp5xbjhcroyhppoeev4hhtkx2gmbvmx6ullfbf5yzptq"
+  }'
+
+<div class="output-section">
+<span class="comment"># CLI will prompt for confirmation — type y and press Enter:</span>
+WARNING: Updates to config ... will replace any existing values. Are you sure? [y/N]: <span class="ok">y</span>
+
+<span class="comment"># On success, it returns the updated application JSON with "time-updated" refreshed.</span>
+</div>
+          </div>
+          <div class="ok-badge">✅ Config updated — changes take effect on next invocation</div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 2 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 2 — Function hangs even after config fix (DB connection blocked)</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> After fixing the config, requests still time out. Function logs (if enabled) show the code reaching <code>oracledb.connect()</code> but never returning.<br>
+        <strong>Root cause found:</strong> The private subnet Security List was missing an ingress rule allowing TCP traffic on port <code>1522</code> (the ATP TLS port).
+      </p>
+
+      <!-- DEBUG STEP 4 -->
+      <div class="workflow-card" id="debug-4">
+        <div class="workflow-badge">DEBUG 4</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Identify the Autonomous Database private endpoint and subnet.</strong> Confirm the ADB is on a private endpoint and which subnet it belongs to, so you know which security list to update.</p>
+          <div class="cmd-block">
+<span class="comment"># List all Autonomous Databases in the compartment</span>
+oci db autonomous-database list \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta
+
+<div class="output-section">
+<span class="comment"># Key fields from the output:</span>
+"db-name":             "sodadb"
+"private-endpoint":    "fgfjmbzr.adb.ap-mumbai-1.oraclecloud.com"
+"private-endpoint-ip": "10.0.2.116"    &lt;-- ADB IP is in the private subnet
+"subnet-id":           "ocid1.subnet.oc1.ap-mumbai-1.aaaaaaaa6tduo2hx45czbymqhyxpngv2l2uotjfyvr6herp35oj26arbxkwa"
+"nsg-ids":             null             &lt;-- No NSGs attached to ADB itself
+</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEBUG STEP 5 -->
+      <div class="workflow-card" id="debug-5">
+        <div class="workflow-badge">DEBUG 5</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Get the private subnet's Security List OCID.</strong> The subnet references which security list is applied to it — we need this OCID to inspect and update the rules.</p>
+          <div class="cmd-block">
+<span class="comment"># Fetch the subnet details to find its security-list-ids</span>
+oci network subnet get \
+  --subnet-id ocid1.subnet.oc1.ap-mumbai-1.aaaaaaaa6tduo2hx45czbymqhyxpngv2l2uotjfyvr6herp35oj26arbxkwa
+
+<div class="output-section">
+<span class="comment"># Key field from the output:</span>
+"display-name": "sod-private-subnet"
+"cidr-block":   "10.0.2.0/24"
+"security-list-ids": [
+  "<span class="ok">ocid1.securitylist.oc1.ap-mumbai-1.aaaaaaaaunw2cqap3kjg5wka4dpipbayc6un4zrljt6yivtaynp2oqc6h6tq</span>"
+]
+</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEBUG STEP 6 -->
+      <div class="workflow-card" id="debug-6">
+        <div class="workflow-badge">DEBUG 6</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Inspect the Security List to verify all ingress rules.</strong> Fetch the full security list to see if port 1522 is allowed. If missing, this is the reason the database connection hangs.</p>
+          <div class="cmd-block">
+<span class="comment"># Get the full ingress and egress rule list for the private subnet security list</span>
+oci network security-list get \
+  --security-list-id ocid1.securitylist.oc1.ap-mumbai-1.aaaaaaaaunw2cqap3kjg5wka4dpipbayc6un4zrljt6yivtaynp2oqc6h6tq
+
+<div class="output-section">
+<span class="comment"># After the fix was applied, the ingress-security-rules array contained:</span>
+{
+  "description": "Allow OCI Functions in private subnet to connect to Autonomous Database",
+  "source": "10.0.2.0/24",   &lt;-- From private subnet CIDR
+  "protocol": "6",            &lt;-- TCP
+  "tcp-options": {
+    "destination-port-range": { "min": 1522, "max": 1522 }  &lt;-- ✅ ADB TLS port
+  }
+}
+</div>
+          </div>
+          <div class="ok-badge">✅ Port 1522 ingress rule confirmed in Security List</div>
+
+          <div class="fix-block" style="margin-top:1rem;">
+            <h4>🔧 How to add the missing rule via OCI Console</h4>
+            <ol style="color:#94a3b8; font-size:13px; line-height:1.8; margin:0; padding-left:1.25rem;">
+              <li>Navigate to <strong>Networking → Virtual Cloud Networks → sod-network-vcn → Security Lists</strong></li>
+              <li>Open the security list associated with <strong>sod-private-subnet</strong></li>
+              <li>Click <strong>Add Ingress Rules</strong> and fill in:
+                <ul style="margin-top:0.4rem;">
+                  <li>Source CIDR: <code>10.0.2.0/24</code></li>
+                  <li>IP Protocol: <code>TCP</code></li>
+                  <li>Destination Port Range: <code>1522</code></li>
+                  <li>Description: <code>Allow OCI Functions in private subnet to connect to Autonomous Database</code></li>
+                </ul>
+              </li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 3 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 3 — Verify the Functions Application itself</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> Uncertain whether the Functions Application deployed correctly or has correct network associations.<br>
+        <strong>Action:</strong> Inspect the application definition to confirm subnet placement and lifecycle state.
+      </p>
+
+      <!-- DEBUG STEP 7 -->
+      <div class="workflow-card" id="debug-7">
+        <div class="workflow-badge">DEBUG 7</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Get the full Functions Application definition.</strong> Confirms the app is ACTIVE, placed in the correct private subnet, and not missing key fields.</p>
+          <div class="cmd-block">
+<span class="comment"># Get all metadata for the sod-app Functions Application</span>
+oci fn application get \
+  --application-id ocid1.fnapp.oc1.ap-mumbai-1.amaaaaaarnlqjtiardxrncpwevjbnpjrjthsj36buvaaladyeipystjp7toa
+
+<div class="output-section">
+<span class="comment"># Key health indicators to verify:</span>
+"lifecycle-state": "<span class="ok">ACTIVE</span>"
+"subnet-ids": ["ocid1.subnet...sod-private-subnet..."]  &lt;-- ✅ On private subnet
+"shape": "GENERIC_X86"
+"config": { ... }  &lt;-- All env vars live here
+</div>
+          </div>
+          <div class="ok-badge">✅ sod-app is ACTIVE and placed in sod-private-subnet</div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 4 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 4 — Verify all deployed Functions and their images</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> Unsure which functions are deployed, what image versions they are running, or if a function was skipped during deployment.<br>
+        <strong>Action:</strong> List all functions under <code>sod-app</code> and verify each one has the expected image.
+      </p>
+
+      <div class="workflow-card" id="debug-8">
+        <div class="workflow-badge">DEBUG 8</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>List all functions deployed inside sod-app.</strong> Returns the name, OCID, image, memory, and timeout of every function under the application.</p>
+          <div class="cmd-block">
+<span class="comment"># List all functions inside sod-app</span>
+oci fn function list \
+  --application-id ocid1.fnapp.oc1.ap-mumbai-1.amaaaaaarnlqjtiardxrncpwevjbnpjrjthsj36buvaaladyeipystjp7toa \
+  --all
+
+<div class="output-section">
+<span class="comment"># Verify each function appears and has the correct image tag:</span>
+"display-name": "sod-api-receiver"       → image: "...sod-api-receiver:1.0.19"
+"display-name": "sod-enqueuer"           → image: "...sod-enqueuer:1.0.3"
+"display-name": "sod-processor"          → image: "...sod-processor:1.0.2"
+"display-name": "sod-connector-processor"→ image: "...sod-connector-processor:1.0.4"
+"display-name": "sod-manual-trigger"     → image: "...sod-manual-trigger:1.0.2"
+"display-name": "sod-list-connectors"    → image: "...sod-list-connectors:1.0.3"
+"display-name": "sod-run-status"         → image: "...sod-run-status:1.0.2"
+<span class="comment"># All 7 functions should appear. lifecycle-state must be "ACTIVE".</span>
+</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-card" id="debug-9">
+        <div class="workflow-badge">DEBUG 9</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Get detailed configuration of a single function (e.g. timeout, memory).</strong> Use this to confirm the function's memory allocation and timeout are not too low, which would cause premature kills.</p>
+          <div class="cmd-block">
+<span class="comment"># First get the function OCID by listing functions (DEBUG 8), then:</span>
+oci fn function get --function-id &lt;FUNCTION_OCID&gt;
+
+<div class="output-section">
+<span class="comment"># Key fields to verify:</span>
+"memory-in-mbs":      256       &lt;-- Minimum 256 MB for DB-connected functions
+"timeout-in-seconds": 300       &lt;-- Max 300s; must be less than API GW timeout (60s default)
+"lifecycle-state":    "<span class="ok">ACTIVE</span>"
+"invoke-endpoint":    "https://..."
+</div>
+          </div>
+          <div class="fix-block">
+            <h4>⚠️ If timeout-in-seconds is too high</h4>
+            <p style="color:#94a3b8; font-size:13px;">OCI API Gateway has a hard 60-second timeout. If your function timeout is set higher, the gateway will return 504 before your function finishes. Update it with:<br><br>
+            <code style="color:#a5f3fc;">oci fn function update --function-id &lt;OCID&gt; --timeout-in-seconds 60</code></p>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 5 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 5 — Verify API Gateway deployments and routes</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> Calls to <code>/sod/v1/connectors</code> return 404 or the gateway returns "No route found".<br>
+        <strong>Action:</strong> Inspect the gateway's deployment spec to verify routes are configured correctly.
+      </p>
+
+      <div class="workflow-card" id="debug-10">
+        <div class="workflow-badge">DEBUG 10</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>List all API Gateway deployments.</strong> Confirms a deployment exists on your gateway with the correct prefix path.</p>
+          <div class="cmd-block">
+<span class="comment"># List all deployments under the API Gateway</span>
+oci api-gateway deployment list \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta \
+  --all
+
+<div class="output-section">
+<span class="comment"># Expected output — one deployment with path prefix /sod:</span>
+"display-name":   "sod-api-deployment"
+"path-prefix":    "/sod"
+"lifecycle-state": "<span class="ok">ACTIVE</span>"
+"endpoint":       "https://fus5pxhueodg6a7moyj4mryvmy.apigateway.ap-mumbai-1.oci.customer-oci.com/sod"
+</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-card" id="debug-11">
+        <div class="workflow-badge">DEBUG 11</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Get the full deployment spec including all route definitions.</strong> Use the deployment OCID from DEBUG 10 to inspect every route path and its target function OCID.</p>
+          <div class="cmd-block">
+<span class="comment"># Get the full deployment spec including all route definitions</span>
+oci api-gateway deployment get --deployment-id &lt;DEPLOYMENT_OCID&gt;
+
+<div class="output-section">
+<span class="comment"># Look inside "specification.routes" for each path → backend function mapping:</span>
+{
+  "path": "/v1/ingest",         "methods": ["POST"],  "backend": { "function-id": "..." }
+  "path": "/v1/connectors",     "methods": ["GET"],   "backend": { "function-id": "..." }
+  "path": "/v1/trigger",        "methods": ["POST"],  "backend": { "function-id": "..." }
+  "path": "/v1/runs/{runId}/status", "methods": ["GET"], "backend": { "function-id": "..." }
+}
+<span class="comment"># If a route is missing, you need to update the deployment spec via the console or CLI.</span>
+</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 6 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 6 — Verify IAM Dynamic Group Policies</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> Functions fail with <code>NotAuthenticatedException</code> or <code>Authorization failed</code> in logs when accessing Vault, Queue, or Object Storage — even though config is correct.<br>
+        <strong>Action:</strong> Verify the Dynamic Group and IAM Policies that grant the functions Resource Principal access.
+      </p>
+
+      <div class="workflow-card" id="debug-12">
+        <div class="workflow-badge">DEBUG 12</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>List all IAM Dynamic Groups in the tenancy.</strong> Confirms <code>sod-functions-dg</code> exists and its matching rule covers your Functions Application.</p>
+          <div class="cmd-block">
+<span class="comment"># List all dynamic groups (tenancy-level resource)</span>
+oci iam dynamic-group list --all
+
+<div class="output-section">
+<span class="comment"># Look for sod-functions-dg and verify its matching-rule:</span>
+"name": "sod-functions-dg"
+"matching-rule": "ALL {resource.type = 'fnfunc', resource.compartment.id = 'ocid1.compartment...'}"
+"lifecycle-state": "<span class="ok">ACTIVE</span>"
+
+<span class="comment"># If missing, create it:</span>
+oci iam dynamic-group create \
+  --name "sod-functions-dg" \
+  --description "Dynamic group for SoD platform OCI Functions" \
+  --matching-rule "ALL {resource.type = 'fnfunc', resource.compartment.id = 'ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta'}"
+</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-card" id="debug-13">
+        <div class="workflow-badge">DEBUG 13</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>List all IAM Policies in the compartment.</strong> Confirms the policies granting <code>sod-functions-dg</code> access to Vault, Queue, Object Storage and ADB exist.</p>
+          <div class="cmd-block">
+<span class="comment"># List all policies in the compartment</span>
+oci iam policy list \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta \
+  --all
+
+<div class="output-section">
+<span class="comment"># Each policy's "statements" array must include rules like:</span>
+"Allow dynamic-group sod-functions-dg to read secret-bundles in compartment sod-network"
+"Allow dynamic-group sod-functions-dg to use queues in compartment sod-network"
+"Allow dynamic-group sod-functions-dg to manage objects in compartment sod-network"
+"Allow dynamic-group sod-functions-dg to use autonomous-databases in compartment sod-network"
+
+<span class="comment"># Missing any of these = 403 Authorization errors in function logs</span>
+</div>
+          </div>
+          <div class="fix-block">
+            <h4>🔧 How to create a missing policy</h4>
+            <p style="color:#94a3b8; font-size:13px; margin-bottom:0.5rem;">Run this once to add all required permissions in one policy:</p>
+            <div class="cmd-block" style="margin:0; font-size:12px;">
+oci iam policy create \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta \
+  --name "sod-functions-policy" \
+  --description "Grants SoD functions access to required OCI services" \
+  --statements '[
+    "Allow dynamic-group sod-functions-dg to read secret-bundles in compartment sod-network",
+    "Allow dynamic-group sod-functions-dg to use queues in compartment sod-network",
+    "Allow dynamic-group sod-functions-dg to manage objects in compartment sod-network",
+    "Allow dynamic-group sod-functions-dg to use autonomous-databases in compartment sod-network",
+    "Allow dynamic-group sod-functions-dg to read buckets in compartment sod-network"
+  ]'
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 7 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 7 — Verify Network Route Tables</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> Functions cannot reach external HCM APIs (Workday, Fusion) or OCI services like Object Storage.<br>
+        <strong>Action:</strong> Verify the private subnet's route table has both the NAT Gateway and Service Gateway rules.
+      </p>
+
+      <div class="workflow-card" id="debug-14">
+        <div class="workflow-badge">DEBUG 14</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Get the private route table rules.</strong> Verify there are two rules: one pointing to the NAT Gateway (for external APIs) and one to the Service Gateway (for OCI services).</p>
+          <div class="cmd-block">
+<span class="comment"># Get the route table OCID from the subnet (DEBUG 5), then:</span>
+oci network route-table get \
+  --rt-id ocid1.routetable.oc1.ap-mumbai-1.aaaaaaaagh4odf7xs4d7o65xcm3zzy4rkxcyq4dmv7bqw7h6tn7ezzyljcea
+
+<div class="output-section">
+<span class="comment"># route-rules must contain both entries:</span>
+[
+  {
+    "destination": "0.0.0.0/0",
+    "destination-type": "CIDR_BLOCK",
+    "network-entity-id": "ocid1.natgateway..."   &lt;-- ✅ External internet via NAT
+  },
+  {
+    "destination": "all-iad-services-in-oracle-services-network",
+    "destination-type": "SERVICE_CIDR_BLOCK",
+    "network-entity-id": "ocid1.servicegateway..." &lt;-- ✅ OCI Services (Vault, Storage, Queue)
+  }
+]
+<span class="comment"># If NAT Gateway rule is missing, functions cannot call external HCM APIs.</span>
+<span class="comment"># If Service Gateway rule is missing, functions cannot reach Vault/Queue/Storage.</span>
+</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="workflow-card" id="debug-15">
+        <div class="workflow-badge">DEBUG 15</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>List all gateways in the VCN.</strong> Confirms the NAT Gateway, Internet Gateway, and Service Gateway all exist and are active.</p>
+          <div class="cmd-block">
+<span class="comment"># List NAT Gateways</span>
+oci network nat-gateway list \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta \
+  --vcn-id ocid1.vcn.oc1.ap-mumbai-1.amaaaaaarnlqjtiak7jmrboqm6guwhunt6lbbj4iwnssjiankfrj4uk4cnbq
+
+<span class="comment"># List Service Gateways</span>
+oci network service-gateway list \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta \
+  --vcn-id ocid1.vcn.oc1.ap-mumbai-1.amaaaaaarnlqjtiak7jmrboqm6guwhunt6lbbj4iwnssjiankfrj4uk4cnbq
+
+<span class="comment"># List Internet Gateways</span>
+oci network internet-gateway list \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta \
+  --vcn-id ocid1.vcn.oc1.ap-mumbai-1.amaaaaaarnlqjtiak7jmrboqm6guwhunt6lbbj4iwnssjiankfrj4uk4cnbq
+
+<div class="output-section">
+<span class="comment"># All 3 should return lifecycle-state: "AVAILABLE"</span>
+"display-name": "sod-nat-gateway"      → "lifecycle-state": "<span class="ok">AVAILABLE</span>"
+"display-name": "sod-service-gateway"  → "lifecycle-state": "<span class="ok">AVAILABLE</span>"
+"display-name": "sod-internet-gateway" → "lifecycle-state": "<span class="ok">AVAILABLE</span>"
+</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 8 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 8 — Verify Autonomous Database status</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> DB errors in function logs even after networking is fixed — database may be stopped or scaled down.<br>
+        <strong>Action:</strong> Check the ADB lifecycle state and confirm it is AVAILABLE.
+      </p>
+
+      <div class="workflow-card" id="debug-16">
+        <div class="workflow-badge">DEBUG 16</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Get the ADB status and connection strings.</strong> Retrieves the full ADB definition including lifecycle state, the private endpoint hostname, and the connection profile strings needed for <code>ATP_CONNECTION_STRING</code>.</p>
+          <div class="cmd-block">
+<span class="comment"># Get full ADB details using its OCID</span>
+oci db autonomous-database get \
+  --autonomous-database-id ocid1.autonomousdatabase.oc1.ap-mumbai-1.anrg6ljrrnlqjtiar26nonu7re37z7lap6zk3jrapvghkx5mfblxpqpaj32a
+
+<div class="output-section">
+<span class="comment"># Check these critical fields:</span>
+"lifecycle-state":    "<span class="ok">AVAILABLE</span>"   &lt;-- Must be AVAILABLE, not STOPPED or TERMINATING
+"private-endpoint":   "fgfjmbzr.adb.ap-mumbai-1.oraclecloud.com"
+"private-endpoint-ip":"10.0.2.116"
+"is-mtls-connection-required": false   &lt;-- If true, wallet-based auth is required
+
+<span class="comment"># Get the exact connection string for ATP_CONNECTION_STRING:</span>
+oci db autonomous-database generate-wallet \
+  --autonomous-database-id &lt;ADB_OCID&gt; \
+  --password &lt;wallet-password&gt; \
+  --file /tmp/wallet.zip
+</div>
+          </div>
+
+          <div class="fix-block">
+            <h4>🔧 If ADB is STOPPED — restart it with:</h4>
+            <div class="cmd-block" style="margin:0; font-size:12px;">
+oci db autonomous-database start \
+  --autonomous-database-id ocid1.autonomousdatabase.oc1.ap-mumbai-1.anrg6ljrrnlqjtiar26nonu7re37z7lap6zk3jrapvghkx5mfblxpqpaj32a
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 9 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 9 — Test the API endpoint directly with curl</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> Not sure if the issue is the browser, the gateway, or the function itself.<br>
+        <strong>Action:</strong> Use <code>curl</code> with verbose output to see exact HTTP status codes, response times, and headers.
+      </p>
+
+      <div class="workflow-card" id="debug-17">
+        <div class="workflow-badge">DEBUG 17</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Call each API endpoint with curl and measure response time.</strong> The <code>-w</code> timing flag reveals where the delay occurs — DNS, TCP connect, TLS, or server response.</p>
+          <div class="cmd-block">
+<span class="comment"># Test GET /sod/v1/connectors (list connectors)</span>
+curl -v -w "\n\nTime DNS: %{time_namelookup}s\nTime Connect: %{time_connect}s\nTime TLS: %{time_appconnect}s\nTime TTFB: %{time_starttransfer}s\nTotal: %{time_total}s\n" \
+  "https://fus5pxhueodg6a7moyj4mryvmy.apigateway.ap-mumbai-1.oci.customer-oci.com/sod/v1/connectors"
+
+<span class="comment"># Test POST /sod/v1/trigger (manual trigger)</span>
+curl -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"connectorId": "oracle-hcm-fusion", "runMode": "FULL", "triggeredBy": "debug-test"}' \
+  "https://fus5pxhueodg6a7moyj4mryvmy.apigateway.ap-mumbai-1.oci.customer-oci.com/sod/v1/trigger"
+
+<span class="comment"># Test GET /sod/v1/runs/{runId}/status</span>
+curl -v "https://fus5pxhueodg6a7moyj4mryvmy.apigateway.ap-mumbai-1.oci.customer-oci.com/sod/v1/runs/&lt;RUN_ID&gt;/status"
+
+<div class="output-section">
+<span class="comment"># Interpreting the timing output:</span>
+Time DNS:     &lt; 0.1s   ✅ Normal
+Time Connect: &lt; 0.3s   ✅ Normal (gateway reachable)
+Time TTFB:    &gt; 30s   <span class="finding">❌ Function is hanging (DB/networking issue)</span>
+Total:        ~60s     <span class="finding">❌ API Gateway hit its timeout limit (504)</span>
+
+<span class="comment"># Expected healthy response:</span>
+HTTP 200 → Time TTFB &lt; 5s on warm invocation, &lt; 15s on cold start
+</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 10 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 10 — Verify OCIR Container Registry images</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> A function deployment succeeds but calls fail with image pull errors or the old image is running.<br>
+        <strong>Action:</strong> List all images in the OCIR repository and confirm the latest tags are present.
+      </p>
+
+      <div class="workflow-card" id="debug-18">
+        <div class="workflow-badge">DEBUG 18</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>List all repositories and images in OCIR.</strong> Confirms all 7 function images exist in the <code>sod-repo</code> namespace.</p>
+          <div class="cmd-block">
+<span class="comment"># List all repositories in the OCIR namespace</span>
+oci artifacts container repository list \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta
+
+<span class="comment"># List all images in a specific repo (e.g. sod-api-receiver)</span>
+oci artifacts container image list \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta \
+  --repository-name sod-repo/sod-api-receiver
+
+<div class="output-section">
+<span class="comment"># Expected — each repo should show the latest tag:</span>
+"display-name": "ap-mumbai-1.ocir.io/bmuwto4pxmhp/sod-repo/sod-api-receiver:1.0.19"
+"display-name": "ap-mumbai-1.ocir.io/bmuwto4pxmhp/sod-repo/sod-list-connectors:1.0.3"
+<span class="comment"># ... etc for all 7 functions</span>
+</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 11 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 11 — Enable and search OCI Function Logs</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> Need to see Python <code>logger.error()</code> and <code>logger.info()</code> output from the running functions in real time.<br>
+        <strong>Action:</strong> Enable OCI Logging on the Functions Application then search the log stream.
+      </p>
+
+      <div class="workflow-card" id="debug-19">
+        <div class="workflow-badge">DEBUG 19</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Enable function invocation logs via OCI Console (one-time setup).</strong> Once enabled, every function invocation writes stdout/stderr to the OCI Logging service.</p>
+          <div class="cmd-block">
+<span class="comment"># Step 1: Create a Log Group (if not already created)</span>
+oci logging log-group create \
+  --compartment-id ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta \
+  --display-name "sod-platform-logs" \
+  --description "Log group for all SoD platform function logs"
+
+<span class="comment"># Step 2: Enable invoke logs on sod-app (via Console is easier — see below)</span>
+<span class="comment"># Navigate to: Developer Services → Functions → Applications → sod-app → Logs</span>
+<span class="comment"># Toggle "Invoke Log" to ON, select compartment + log group created above</span>
+
+<span class="comment"># Step 3: Search logs after invoking the API</span>
+oci logging-search search-logs \
+  --search-query 'search "ocid1.compartment.oc1..aaaaaaaauj3rfwoniy2hwww43z6k5gdg377ww6wsgyfpo2x4ztqle5hdrtta" | where source = "sod-app"' \
+  --time-start "$(date -u -v-15M +%Y-%m-%dT%H:%M:%SZ)" \
+  --time-end   "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+<div class="output-section">
+<span class="comment"># Each log entry will show the Python logger output, e.g.:</span>
+{"event": "processing_failure", "object": "employee_data.csv", "error": "ORA-12541: ...", "retriesRemaining": 2}
+{"event": "processing_success", "object": "employee_data.csv", "fileType": "CSV", "rows": 4521}
+</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- ISSUE 12 -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:0.5rem; color: var(--primary);">Issue 12 — Verify Vault secret value is correct</h2>
+      <p style="color:var(--text-secondary); font-size:14px; margin-bottom:1.5rem;">
+        <strong>Symptom:</strong> Functions retrieve the secret successfully but still fail DB login — the password stored in Vault may be wrong or stale.<br>
+        <strong>Action:</strong> Read and decode the current secret value to verify it matches the ADB admin password.
+      </p>
+
+      <div class="workflow-card" id="debug-20">
+        <div class="workflow-badge">DEBUG 20</div>
+        <div class="workflow-content">
+          <p class="step-instruction"><strong>Read the current Vault secret content and decode it.</strong> Retrieves the base64-encoded secret bundle and decodes it so you can verify the password is exactly what you expect.</p>
+          <div class="cmd-block">
+<span class="comment"># Retrieve the secret bundle and decode it in one pipeline</span>
+oci secrets secret-bundle get \
+  --secret-id ocid1.vaultsecret.oc1.ap-mumbai-1.amaaaaaarnlqjtiaayskhu6ykny3jky42inswiqkuwp57uwkrkfvy7uxmfgq \
+  --query 'data."secret-bundle-content".content' \
+  --raw-output | base64 --decode
+
+<div class="output-section">
+<span class="comment"># Output: the plaintext password stored in Vault</span>
+<span class="ok">MyDatabasePassword123!</span>
+<span class="comment"># Verify this exactly matches the ADMIN/sod_admin password set during ADB creation</span>
+<span class="comment"># If wrong, update the secret with:</span>
+echo -n "NewPassword!" | base64
+<span class="comment"># Then update the secret version in the OCI Console: Vault → Secrets → sod-db-password → Create Secret Version</span>
+</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="section-divider">
+
+      <!-- QUICK REFERENCE TABLE -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:1rem; color: var(--primary);">Quick Reference — All 20 Debug Commands</h2>
+      <table class="debug-table">
+        <thead>
+          <tr><th>#</th><th>Command</th><th>What it tells you</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td><code>oci fn application get ... --query 'data.config'</code></td><td>View all env vars set on the Functions Application</td></tr>
+          <tr><td>2</td><td><code>oci vault secret list --compartment-id &lt;OCID&gt;</code></td><td>List Vault Secrets — find the correct <code>DB_SECRET_OCID</code></td></tr>
+          <tr><td>3</td><td><code>oci fn application update ... --config '{...}'</code></td><td>Overwrite the entire config map on the Functions Application</td></tr>
+          <tr><td>4</td><td><code>oci db autonomous-database list --compartment-id &lt;OCID&gt;</code></td><td>List ADBs — confirm private-endpoint-ip and subnet-id</td></tr>
+          <tr><td>5</td><td><code>oci network subnet get --subnet-id &lt;OCID&gt;</code></td><td>Get subnet details — find which security-list-ids are attached</td></tr>
+          <tr><td>6</td><td><code>oci network security-list get --security-list-id &lt;OCID&gt;</code></td><td>Dump all ingress/egress rules — verify port 1522 exists</td></tr>
+          <tr><td>7</td><td><code>oci fn application get --application-id &lt;OCID&gt;</code></td><td>Get full Application object — confirm ACTIVE, correct subnet</td></tr>
+          <tr><td>8</td><td><code>oci fn function list --application-id &lt;OCID&gt; --all</code></td><td>List all 7 deployed functions and their image versions</td></tr>
+          <tr><td>9</td><td><code>oci fn function get --function-id &lt;OCID&gt;</code></td><td>Get single function — verify memory, timeout, and status</td></tr>
+          <tr><td>10</td><td><code>oci api-gateway deployment list --compartment-id &lt;OCID&gt;</code></td><td>List API Gateway deployments — confirm path prefix <code>/sod</code></td></tr>
+          <tr><td>11</td><td><code>oci api-gateway deployment get --deployment-id &lt;OCID&gt;</code></td><td>Get full route spec — verify all 4 route paths and their function targets</td></tr>
+          <tr><td>12</td><td><code>oci iam dynamic-group list --all</code></td><td>Confirm <code>sod-functions-dg</code> exists with correct matching rule</td></tr>
+          <tr><td>13</td><td><code>oci iam policy list --compartment-id &lt;OCID&gt;</code></td><td>Verify all IAM policies granting functions access to Vault / Queue / Storage</td></tr>
+          <tr><td>14</td><td><code>oci network route-table get --rt-id &lt;OCID&gt;</code></td><td>Inspect private route table — verify NAT + Service Gateway rules exist</td></tr>
+          <tr><td>15</td><td><code>oci network nat-gateway list / service-gateway list / internet-gateway list</code></td><td>Confirm all 3 VCN gateways are AVAILABLE</td></tr>
+          <tr><td>16</td><td><code>oci db autonomous-database get --autonomous-database-id &lt;OCID&gt;</code></td><td>Verify ADB is AVAILABLE (not STOPPED) and get its private endpoint IP</td></tr>
+          <tr><td>17</td><td><code>curl -v -w "Time TTFB: %{time_starttransfer}s\nTotal: %{time_total}s" &lt;URL&gt;</code></td><td>Test API endpoints directly — measure where the delay occurs</td></tr>
+          <tr><td>18</td><td><code>oci artifacts container image list --compartment-id &lt;OCID&gt;</code></td><td>Confirm all 7 function images exist in OCIR with correct version tags</td></tr>
+          <tr><td>19</td><td><code>oci logging-search search-logs --search-query '...'</code></td><td>Search OCI Logging for Python logger output from function invocations</td></tr>
+          <tr><td>20</td><td><code>oci secrets secret-bundle get ... --raw-output | base64 --decode</code></td><td>Read and decode Vault secret — verify the DB password is correct</td></tr>
+        </tbody>
+      </table>
+
+      <hr class="section-divider">
+
+      <!-- ROOT CAUSES SUMMARY -->
+      <h2 style="font-size:1.35rem; font-weight:800; margin-bottom:1rem; color: var(--primary);">Summary of Root Causes &amp; Fixes Applied</h2>
+      <table class="debug-table">
+        <thead>
+          <tr><th>Root Cause</th><th>Symptom</th><th>Fix Applied</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>DB_SECRET_OCID</code> pointed to the ADB OCID (wrong resource type)</td>
+            <td>SecretsClient throws 404 before DB connection starts → function crashes → 502</td>
+            <td>Updated to the correct Vault Secret OCID (<code>ocid1.vaultsecret...</code>)</td>
+          </tr>
+          <tr>
+            <td><code>INGESTION_QUEUE_OCID</code> ending in <code>-dlq</code></td>
+            <td>put_messages() rejected on a Dead Letter Queue → enqueuer crashes</td>
+            <td>Stripped the <code>-dlq</code> suffix — now points to the primary queue</td>
+          </tr>
+          <tr>
+            <td><code>CONNECTOR_QUEUE_OCID</code> ending in <code>-dlq</code></td>
+            <td>Same DLQ problem for connector sync jobs</td>
+            <td>Stripped the <code>-dlq</code> suffix — now points to the primary queue</td>
+          </tr>
+          <tr>
+            <td>Missing TCP port 1522 ingress rule on private subnet Security List</td>
+            <td>oracledb.connect() hangs indefinitely → function timeout → 504 from gateway</td>
+            <td>Added ingress rule: Source <code>10.0.2.0/24</code> → TCP → port <code>1522</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="callout accent" style="margin-top:2rem;">
+        <div class="callout-title">💡 General Debugging Approach — in order</div>
+        <ol style="color:var(--text-secondary); font-size:14px; line-height:2.2; margin:0.75rem 0 0; padding-left:1.25rem;">
+          <li><strong>Check env vars first</strong> (DEBUG 1) — wrong OCIDs are the #1 silent failure cause.</li>
+          <li><strong>Enable OCI Function Logs</strong> (DEBUG 19) — Python tracebacks reveal exactly which line fails.</li>
+          <li><strong>Use curl with timing</strong> (DEBUG 17) — if TTFB &gt; 30s, it's networking or DB, not code.</li>
+          <li><strong>Verify Security List port 1522</strong> (DEBUG 6) — required even on same subnet as ADB.</li>
+          <li><strong>Verify IAM policies</strong> (DEBUG 13) — missing rules cause silent 403s in function logs.</li>
+          <li><strong>Queue OCIDs must never end in <code>-dlq</code></strong> — DLQs are receive-only overflow channels.</li>
+          <li><strong>ADB must be AVAILABLE</strong> (DEBUG 16) — serverless ADB may auto-stop after inactivity.</li>
+          <li><strong>After any config change</strong>, next cold-start picks it up — <strong>no redeploy needed</strong>.</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- PAGE NAVIGATION -->
+    <div style="display:flex; justify-content:flex-start; margin-top: 2.5rem;">
+      <a href="events_alarms.html" style="display:inline-flex; align-items:center; gap:0.5rem; padding:0.75rem 1.5rem; background: rgba(255,255,255,0.08); color:var(--text-secondary); border-radius:8px; font-weight:600; text-decoration:none;">
+        &larr; Events &amp; Alarms
+      </a>
+    </div>
+
+  </main>
+</body>
+</html>

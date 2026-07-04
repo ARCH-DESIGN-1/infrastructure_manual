@@ -33,6 +33,8 @@
       <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
       <div class="menu-section">Assessment Engines</div>
       <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
+      <div class="menu-section">Operations</div>
+      <a href="troubleshooting.html" class="menu-item">🔧 Troubleshooting</a>
     </div>
   </aside>
 
@@ -234,7 +236,8 @@
               <span class="crumb active">Create Function (repeat ×7)</span>
             </div>
             <p class="step-instruction"><strong>What you're doing:</strong> Creating the individual function definitions inside the <code>sod-app</code> application. Each function definition tells OCI: "when this function is invoked, pull this specific Docker image from OCIR, allocate this much memory, and time out after this many seconds". The image path you specify is the full OCIR path of the image you pushed in Step 7.2. You need to repeat this process 7 times — once per function.</p>
-            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Open <strong>sod-app</strong>, click <strong>Create Function</strong>. For each function: enter the name, paste the full image path, set memory and timeout, then click Create. Repeat for all 7.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it (Console Option):</strong> Open <strong>sod-app</strong>, click <strong>Create Function</strong>. For each function: enter the name, paste the full image path, set memory and timeout, then click Create. Repeat for all 7.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it (Programmatic Option - Recommended):</strong> Alternatively, running <code>fn deploy --app sod-app</code> will automatically build, push, and programmatically create/update the function definitions on OCI with the correct memory and timeout configured in <code>func.yaml</code>. You can skip the Console UI creation steps entirely.</p>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">Full image path format</span>
@@ -269,14 +272,26 @@
             </div>
             <p class="step-instruction"><strong>What you're doing:</strong> OCI Functions reads configuration at runtime from Application-level environment variables. Instead of hardcoding connection strings and resource OCIDs inside the function code, you store them here so they can be updated without redeploying images. These variables tell each function: where the database is, which queue to use, what compartment it runs in, and what region it's in.</p>
             <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> In <strong>sod-app</strong>, click <strong>Configuration</strong> in the left menu. Add the following key-value pairs using the <strong>Add Key-Value Pair</strong> button. Replace placeholder values with your actual OCIDs.</p>
+            <div class="callout warning">
+              <div class="callout-title">⚠️ Critical Environment Configuration Rules</div>
+              <ul style="margin: 0.5rem 0 0 1.2rem; line-height: 1.8;">
+                <li><strong>DB_SECRET_OCID</strong> must point to the <strong>Vault Secret</strong> OCID (starts with <code>ocid1.vaultsecret...</code>). Do NOT point it to the Vault itself (starts with <code>ocid1.vault...</code>) or the database instance, otherwise OCI SecretsClient will return 400 InvalidParameter or 404 NotAuthorized.</li>
+                <li><strong>ATP_CONNECTION_STRING</strong> must be the full walletless TNS connect descriptor (e.g. <code>(description=(retry_count=3)...)</code>) to support walletless connection. Keep retries low (e.g. <code>retry_count=3</code>) to prevent long execution stalls during DB connection drops.</li>
+                <li><strong>DB_USER</strong> should be set to the application schema user <code>sod_admin</code>. During initial bootstrapping (if schemas do not exist yet), it can be set to <code>ADMIN</code>.</li>
+              </ul>
+            </div>
             <div class="fields-grid" style="grid-template-columns: 1fr;">
               <div class="field-item">
                 <span class="field-label">DB_SECRET_OCID — OCID of the sod-db-password vault secret</span>
                 <div class="value-wrap"><span class="field-value copy-target">ocid1.vaultsecret.oc1..&lt;your-db-secret-ocid&gt;</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
               <div class="field-item">
-                <span class="field-label">ATP_CONNECTION_STRING — ATP private endpoint hostname</span>
-                <div class="value-wrap"><span class="field-value copy-target">sodassessdb_high</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+                <span class="field-label">DB_USER — Database schema user (defaults to sod_admin)</span>
+                <div class="value-wrap"><span class="field-value copy-target">sod_admin</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">ATP_CONNECTION_STRING — ATP private endpoint full connect descriptor</span>
+                <div class="value-wrap"><span class="field-value copy-target">(description=(retry_count=3)(retry_delay=2)(address=(protocol=tcps)(port=1522)(host=&lt;adb_host&gt;))(connect_data=(service_name=&lt;service_name&gt;))(security=(ssl_server_cert_dn="CN=adb.ap-mumbai-1.oraclecloud.com, O=Oracle Corporation, L=Redwood City, ST=California, C=US")))</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
               <div class="field-item">
                 <span class="field-label">INGESTION_QUEUE_OCID — OCID of sod-ingestion-queue</span>
@@ -288,7 +303,7 @@
               </div>
               <div class="field-item">
                 <span class="field-label">BUCKET_NAME — Landing zone bucket name</span>
-                <div class="value-wrap"><span class="field-value copy-target">landing-zone-assessment</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
+                <div class="value-wrap"><span class="field-value copy-target">sod-landing-zone</span><button class="copy-btn" onclick="copyText(this)">Copy</button></div>
               </div>
               <div class="field-item">
                 <span class="field-label">REGION — OCI region identifier</span>

@@ -35,6 +35,8 @@
       <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
       <div class="menu-section">Assessment Engines</div>
       <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
+      <div class="menu-section">Operations</div>
+      <a href="troubleshooting.html" class="menu-item">🔧 Troubleshooting</a>
     </div>
   </aside>
 
@@ -46,8 +48,9 @@
     </header>
 
     <div class="callout info">
-      <div class="callout-title">&#9432; Important — Creation Order</div>
-      <p>You <strong>must create the Dead Letter Queues (DLQs) first</strong> before creating the primary queues. The primary queues reference the DLQ OCIDs during setup. Creating them in reverse order will fail with a validation error.</p>
+      <div class="callout-title">&#9432; Important — OCI Console vs. Terraform Note</div>
+      <p><strong>If using OCI Console:</strong> OCI's Console UI does not support selecting a separate queue resource to act as a DLQ. Instead, OCI handles DLQ routing internally when you set the <strong>Maximum delivery attempts</strong>. You do not need to create separate DLQ queue resources; simply create the primary queues and set their Maximum delivery attempts to 3.</p>
+      <p style="margin-top: 0.5rem;"><strong>If using Terraform:</strong> Creating separate DLQ queue resources and linking them using the <code>dead_letter_queue_id</code> property is supported (as defined in the <code>queue.tf</code> file).</p>
     </div>
 
     <div class="section-divider"></div>
@@ -208,7 +211,7 @@
               </div>
             </div>
             <p class="step-instruction"><strong>What you're doing:</strong> Creating the main ingestion pipeline queue. The <strong>Visibility Timeout of 300 seconds</strong> is the critical setting here — when the processor function dequeues a message, OCI hides that message from other consumers for 300 seconds (5 minutes). This gives the function time to download the file, parse it, and insert all rows into the database. If the function finishes before 300s, it deletes the message. If it crashes, the timeout expires and the message becomes visible again for retry. The 300s value is chosen because even a 50,000-row CSV file should load in under 4 minutes.</p>
-            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Create a new queue and set the Dead Letter Queue to <code>sod-ingestion-dlq</code>.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Click <strong>Create Queue</strong>. Select <strong>Custom configuration</strong>, and under **Dead letter queue (DLQ) settings**, set **Maximum delivery attempts** to <code>3</code>. *(Note: If using the OCI Console, you will not see a dropdown to select `sod-ingestion-dlq` — OCI manages this internally. The separate DLQ queue is only referenced when deploying via Terraform).*</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Queue Name</span>
@@ -261,7 +264,7 @@
               </div>
             </div>
             <p class="step-instruction"><strong>What you're doing:</strong> Creating the connector sync queue with a longer 600-second visibility timeout. HCM connector syncs are much heavier operations — they authenticate against an external API, paginate through potentially thousands of employee records, download them, transform the data, and write files to Object Storage. 10 minutes gives even the largest HCM tenants enough processing window. Setting Max Delivery Attempts to 3 means a temporary HCM API outage will get up to 2 automatic retries before the job is moved to the DLQ for operator review.</p>
-            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Create another queue and set the Dead Letter Queue to <code>sod-connector-dlq</code>.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Click <strong>Create Queue</strong>. Select <strong>Custom configuration</strong>, and under **Dead letter queue (DLQ) settings**, set **Maximum delivery attempts** to <code>3</code>. *(Note: If using the OCI Console, you will not see a dropdown to select `sod-connector-dlq` — OCI manages this internally. The separate DLQ queue is only referenced when deploying via Terraform).*</p>
             <div class="fields-grid">
               <div class="field-item">
                 <span class="field-label">Queue Name</span>

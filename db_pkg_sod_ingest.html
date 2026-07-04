@@ -35,6 +35,8 @@
       <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
       <div class="menu-section">Assessment Engines</div>
       <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
+      <div class="menu-section">Operations</div>
+      <a href="troubleshooting.html" class="menu-item">🔧 Troubleshooting</a>
     </div>
   </aside>
 
@@ -146,85 +148,150 @@
         );
     <span class="kw">END</span> prc_move_object_prefix;
 
-    <span class="kw">PROCEDURE</span> <span class="fn">prc_ingest_json</span> (p_clob <span class="kw">IN CLOB</span>, p_staging_id <span class="kw">IN NUMBER</span>, p_rows_loaded <span class="kw">OUT NUMBER</span>) <span class="kw">IS</span>
-        v_before <span class="kw">NUMBER</span>;
-        v_after <span class="kw">NUMBER</span>;
-    <span class="kw">BEGIN</span>
-        <span class="kw">SELECT COUNT</span>(*) <span class="kw">INTO</span> v_before <span class="kw">FROM</span> sod_users;
+    PROCEDURE <span class="fn">prc_ingest_csv</span> (p_clob IN CLOB, p_staging_id IN NUMBER, p_rows_loaded OUT NUMBER) IS
+        v_before_count NUMBER;
+        v_after_count NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO v_before_count FROM per_users;
 
-        <span class="kw">MERGE INTO</span> sod_users tgt
-        <span class="kw">USING</span> (
-            <span class="kw">SELECT</span> jt.user_id, jt.username, jt.email
-            <span class="kw">FROM   JSON_TABLE</span>(p_clob, <span class="str">'$[*]'</span>
-                       <span class="kw">COLUMNS</span> (
-                           user_id  <span class="kw">NUMBER PATH</span> <span class="str">'$.user_id'</span>,
-                           username <span class="kw">VARCHAR2</span>(<span class="num">255</span>) <span class="kw">PATH</span> <span class="str">'$.username'</span>,
-                           email    <span class="kw">VARCHAR2</span>(<span class="num">255</span>) <span class="kw">PATH</span> <span class="str">'$.email'</span>
+        MERGE INTO per_users tgt
+        USING (
+            SELECT jt.user_id, jt.username, jt.email
+            FROM   JSON_TABLE(
+                       DBMS_CLOUD.COPY_DATA(
+                           credential_name => 'OCI_RESOURCE_PRINCIPAL',
+                           table_name      => 'per_users',
+                           file_uri_list   => 'https://objectstorage.ap-mumbai-1.oraclecloud.com/...'
+                       ), '$[*]'
+                       COLUMNS (
+                           user_id  NUMBER PATH '$.user_id',
+                           username VARCHAR2 PATH '$.username',
+                           email    VARCHAR2 PATH '$.email'
                        )
                    ) jt
         ) src
-        <span class="kw">ON</span> (tgt.user_id = src.user_id)
-        <span class="kw">WHEN MATCHED THEN UPDATE SET</span>
-            tgt.username = src.username, tgt.updated_at = <span class="kw">SYSTIMESTAMP</span>
-        <span class="kw">WHEN NOT MATCHED THEN INSERT</span> (user_id, username, email, created_at)
-            <span class="kw">VALUES</span> (src.user_id, src.username, src.email, <span class="kw">SYSTIMESTAMP</span>);
+        ON (tgt.user_id = src.user_id)
+        WHEN MATCHED THEN UPDATE SET
+            tgt.username = src.username
+        WHEN NOT MATCHED THEN INSERT (user_id, username, email, start_date)
+            VALUES (src.user_id, src.username, src.email, SYSDATE);
 
-        <span class="kw">SELECT COUNT</span>(*) <span class="kw">INTO</span> v_after <span class="kw">FROM</span> sod_users;
-        p_rows_loaded := v_after - v_before;
-    <span class="kw">END</span> prc_ingest_json;
+        SELECT COUNT(*) INTO v_after_count FROM per_users;
+        p_rows_loaded := v_after_count - v_before_count;
+    END prc_ingest_csv;
 
-    <span class="kw">PROCEDURE</span> <span class="fn">prc_ingest_file</span> (
-        p_namespace     <span class="kw">IN  VARCHAR2</span>,
-        p_bucket        <span class="kw">IN  VARCHAR2</span>,
-        p_object_name   <span class="kw">IN  VARCHAR2</span>,
-        p_file_type     <span class="kw">IN  VARCHAR2</span>,
-        p_status        <span class="kw">OUT VARCHAR2</span>,
-        p_error_message <span class="kw">OUT VARCHAR2</span>,
-        p_rows_loaded   <span class="kw">OUT NUMBER</span>
+    PROCEDURE <span class="fn">prc_ingest_json</span> (p_clob IN CLOB, p_staging_id IN NUMBER, p_rows_loaded OUT NUMBER) IS
+        v_before_count NUMBER;
+        v_after_count NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO v_before_count FROM per_users;
+
+        MERGE INTO per_users tgt
+        USING (
+            SELECT jt.user_id, jt.username, jt.email
+            FROM   JSON_TABLE(p_clob, '$[*]'
+                       COLUMNS (
+                           user_id  NUMBER PATH '$.user_id',
+                           username VARCHAR2(255) PATH '$.username',
+                           email    VARCHAR2(255) PATH '$.email'
+                       )
+                   ) jt
+        ) src
+        ON (tgt.user_id = src.user_id)
+        WHEN MATCHED THEN UPDATE SET
+            tgt.username = src.username
+        WHEN NOT MATCHED THEN INSERT (user_id, username, email, start_date)
+            VALUES (src.user_id, src.username, src.email, SYSDATE);
+
+        SELECT COUNT(*) INTO v_after_count FROM per_users;
+        p_rows_loaded := v_after_count - v_before_count;
+    END prc_ingest_json;
+
+    PROCEDURE <span class="fn">prc_ingest_xml</span> (p_clob IN CLOB, p_staging_id IN NUMBER, p_rows_loaded OUT NUMBER) IS
+        v_before_count NUMBER;
+        v_after_count NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO v_before_count FROM per_users;
+
+        MERGE INTO per_users tgt
+        USING (
+            SELECT xt.user_id, xt.username, xt.email
+            FROM   XMLTABLE('/users/user' PASSING XMLTYPE(p_clob)
+                       COLUMNS (
+                           user_id  NUMBER PATH 'user_id',
+                           username VARCHAR2(255) PATH 'username',
+                           email    VARCHAR2(255) PATH 'email'
+                       )
+                   ) xt
+        ) src
+        ON (tgt.user_id = src.user_id)
+        WHEN MATCHED THEN UPDATE SET
+            tgt.username = src.username
+        WHEN NOT MATCHED THEN INSERT (user_id, username, email, start_date)
+            VALUES (src.user_id, src.username, src.email, SYSDATE);
+
+        SELECT COUNT(*) INTO v_after_count FROM per_users;
+        p_rows_loaded := v_after_count - v_before_count;
+    END prc_ingest_xml;
+
+    PROCEDURE <span class="fn">prc_ingest_file</span> (
+        p_namespace     IN  VARCHAR2,
+        p_bucket        IN  VARCHAR2,
+        p_object_name   IN  VARCHAR2,
+        p_file_type     IN  VARCHAR2,
+        p_status        OUT VARCHAR2,
+        p_error_message OUT VARCHAR2,
+        p_rows_loaded   OUT NUMBER
     ) IS
-        v_file_size <span class="kw">NUMBER</span> := <span class="num">0</span>;
-        v_staging_id <span class="kw">NUMBER</span>;
-        v_blob <span class="kw">BLOB</span>;
-        v_clob <span class="kw">CLOB</span>;
-    <span class="kw">BEGIN</span>
-        <span class="kw">INSERT INTO</span> unified_landing_staging (file_name, file_type, status)
-        <span class="kw">VALUES</span> (p_object_name, p_file_type, <span class="str">'RUNNING'</span>)
-        <span class="kw">RETURNING</span> staging_id <span class="kw">INTO</span> v_staging_id;
-        <span class="kw">COMMIT</span>;
+        v_file_size NUMBER := 0;
+        v_staging_id NUMBER;
+        v_blob BLOB;
+        v_clob CLOB;
+    BEGIN
+        INSERT INTO unified_landing_staging (file_name, file_type, status)
+        VALUES (p_object_name, p_file_type, 'RUNNING')
+        RETURNING staging_id INTO v_staging_id;
+        COMMIT;
 
-        <span class="fn">prc_validate_file</span>(p_namespace, p_bucket, p_object_name, p_file_type, v_file_size);
+        prc_validate_file(p_namespace, p_bucket, p_object_name, p_file_type, v_file_size);
 
         v_blob := DBMS_CLOUD.GET_OBJECT(
-            credential_name => <span class="str">'OCI_RESOURCE_PRINCIPAL'</span>,
-            object_uri      => <span class="fn">build_uri</span>(p_namespace, p_bucket, p_object_name)
+            credential_name => 'OCI_RESOURCE_PRINCIPAL',
+            object_uri      => build_uri(p_namespace, p_bucket, p_object_name)
         );
-        v_clob := <span class="fn">blob_to_clob</span>(v_blob);
+        v_clob := blob_to_clob(v_blob);
 
-        <span class="fn">prc_ingest_json</span>(v_clob, v_staging_id, p_rows_loaded);
+        IF p_file_type = 'CSV' THEN
+            prc_ingest_csv(v_clob, v_staging_id, p_rows_loaded);
+        ELSIF p_file_type = 'JSON' THEN
+            prc_ingest_json(v_clob, v_staging_id, p_rows_loaded);
+        ELSIF p_file_type = 'XML' THEN
+            prc_ingest_xml(v_clob, v_staging_id, p_rows_loaded);
+        END IF;
 
-        <span class="kw">UPDATE</span> unified_landing_staging
-        <span class="kw">SET    status</span> = <span class="str">'SUCCESS'</span>, processed_at = <span class="kw">SYSTIMESTAMP</span>, file_size_bytes = v_file_size, rows_loaded = p_rows_loaded, archive_prefix = <span class="str">'processed'</span>
-        <span class="kw">WHERE  staging_id = v_staging_id;</span>
+        UPDATE unified_landing_staging
+        SET    status = 'SUCCESS', processed_at = SYSTIMESTAMP, file_size_bytes = v_file_size, rows_loaded = p_rows_loaded, archive_prefix = 'processed'
+        WHERE  staging_id = v_staging_id;
         
-        <span class="fn">prc_move_object_prefix</span>(p_namespace, p_bucket, p_object_name, <span class="str">'processed'</span>);
+        prc_move_object_prefix(p_namespace, p_bucket, p_object_name, 'processed');
         
-        p_status := <span class="str">'SUCCESS'</span>;
-        <span class="kw">COMMIT</span>;
+        p_status := 'SUCCESS';
+        COMMIT;
 
-    <span class="kw">EXCEPTION WHEN OTHERS THEN</span>
-        <span class="kw">ROLLBACK</span>;
-        p_status := <span class="str">'FAILED'</span>;
-        p_error_message := <span class="kw">SQLERRM</span>;
+    EXCEPTION WHEN OTHERS THEN
+        ROLLBACK;
+        p_status := 'FAILED';
+        p_error_message := SQLERRM;
         
-        <span class="kw">UPDATE</span> unified_landing_staging
-        <span class="kw">SET    status</span> = <span class="str">'FAILED'</span>, processed_at = <span class="kw">SYSTIMESTAMP</span>, error_code = <span class="kw">TO_CHAR</span>(<span class="kw">SQLCODE</span>), error_detail = <span class="kw">SQLERRM</span>, archive_prefix = <span class="str">'error'</span>
-        <span class="kw">WHERE  staging_id = v_staging_id;</span>
-        <span class="kw">COMMIT</span>;
+        UPDATE unified_landing_staging
+        SET    status = 'FAILED', processed_at = SYSTIMESTAMP, error_code = TO_CHAR(SQLCODE), error_detail = SQLERRM, archive_prefix = 'error'
+        WHERE  staging_id = v_staging_id;
+        COMMIT;
 
-        <span class="kw">BEGIN</span>
-            <span class="fn">prc_move_object_prefix</span>(p_namespace, p_bucket, p_object_name, <span class="str">'error'</span>);
-        <span class="kw">EXCEPTION WHEN OTHERS THEN NULL; END;</span>
-    <span class="kw">END</span> prc_ingest_file;
+        BEGIN
+            prc_move_object_prefix(p_namespace, p_bucket, p_object_name, 'error');
+        EXCEPTION WHEN OTHERS THEN NULL; END;
+    END prc_ingest_file;
 
 END pkg_sod_ingest;
 /</code></pre>

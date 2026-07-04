@@ -35,6 +35,8 @@
       <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
       <div class="menu-section">Assessment Engines</div>
       <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
+      <div class="menu-section">Operations</div>
+      <a href="troubleshooting.html" class="menu-item">🔧 Troubleshooting</a>
     </div>
   </aside>
 
@@ -148,7 +150,7 @@
                 <span class="crumb active">Create Secret — DB Password</span>
               </div>
             </div>
-            <p class="step-instruction"><strong>What you're doing:</strong> A Secret is a versioned, encrypted blob stored inside the vault and wrapped with the master key from Step 3.2. When a Function needs the DB password, it calls the Vault API to retrieve this secret — the actual password value is never stored anywhere in the function code, environment variables, or configuration files. OCI automatically rotates secrets when you create new versions. Paste the <strong>actual DB admin password</strong> you intend to use as the Secret Contents value.</p>
+             <p class="step-instruction"><strong>What you're doing:</strong> A Secret is a versioned, encrypted blob stored inside the vault and wrapped with the master key from Step 3.2. When a Function needs the DB password, it calls the Vault API to retrieve this secret — the actual password value is never stored anywhere in the function code, environment variables, or configuration files. OCI automatically rotates secrets when you create new versions. Paste the <strong>password of the sod_admin database user</strong> (default: <code>SoD_Admin_P@ss123!</code>) you intend to use as the Secret Contents value.</p>
             <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Click <strong>Secrets</strong> in the vault sidebar, then <strong>Create Secret</strong>.</p>
             <div class="fields-grid">
               <div class="field-item">
@@ -166,9 +168,23 @@
                 </div>
               </div>
               <div class="field-item">
+                <span class="field-label">Secret Generation</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Manual secret generation</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
                 <span class="field-label">Secret Type Template</span>
                 <div class="value-wrap">
                   <span class="field-value copy-target">Plain-Text</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Secret Contents</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">[Your Secure Password]</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
@@ -205,9 +221,23 @@
                 </div>
               </div>
               <div class="field-item">
+                <span class="field-label">Secret Generation</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Manual secret generation</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
                 <span class="field-label">Secret Type Template</span>
                 <div class="value-wrap">
                   <span class="field-value copy-target">Plain-Text</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Secret Contents</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">[Your HCM Credentials JSON]</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>
@@ -331,6 +361,59 @@
                 <span class="field-label">Admin Password</span>
                 <div class="value-wrap">
                   <span class="field-value copy-target">Use the value stored in sod-db-password secret</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 4.3 -->
+        <div class="workflow-card" id="step-4-3">
+          <div class="workflow-badge">STEP 4.3</div>
+          <div class="workflow-content">
+            <div class="step-header-action">
+              <div class="breadcrumbs">
+                <span class="crumb">Virtual Cloud Network</span>
+                <span class="crumb">Security Lists</span>
+                <span class="crumb active">Configure Database Ingress Rule</span>
+              </div>
+            </div>
+            <p class="step-instruction"><strong>What you're doing:</strong> Allowing serverless functions executing inside the private subnet to connect to the Autonomous Database on port 1522. Because the database uses a Private Endpoint inside <code>sod-private-subnet</code>, OCI will block all incoming database traffic (even from the same subnet) unless an ingress rule explicitly allows it. Adding this rule ensures the functions do not hang indefinitely when attempting to connect to the database.</p>
+            <p class="step-instruction" style="margin-top:0.5rem;"><strong>How to do it:</strong> Open your VCN <strong>sod-network-vcn</strong>, click <strong>Security Lists</strong>, and open the Security List associated with <strong>sod-private-subnet</strong>. Click <strong>Add Ingress Rules</strong> and add the rule defined below:</p>
+            <div class="fields-grid">
+              <div class="field-item">
+                <span class="field-label">Source Type</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">CIDR</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Source CIDR</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">10.0.2.0/24</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">IP Protocol</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">TCP</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item">
+                <span class="field-label">Destination Port Range</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">1522</span>
+                  <button class="copy-btn" onclick="copyText(this)">Copy</button>
+                </div>
+              </div>
+              <div class="field-item" style="grid-column: span 2;">
+                <span class="field-label">Description</span>
+                <div class="value-wrap">
+                  <span class="field-value copy-target">Allow OCI Functions in private subnet to connect to Autonomous Database</span>
                   <button class="copy-btn" onclick="copyText(this)">Copy</button>
                 </div>
               </div>

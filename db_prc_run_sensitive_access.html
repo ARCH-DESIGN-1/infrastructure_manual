@@ -35,6 +35,8 @@
       <a href="db_seed_data.html" class="menu-item">12. Seed Data (DML)</a>
       <div class="menu-section">Assessment Engines</div>
       <a href="assessment_engines.html" class="menu-item">13. Use Cases &amp; Views</a>
+      <div class="menu-section">Operations</div>
+      <a href="troubleshooting.html" class="menu-item">🔧 Troubleshooting</a>
     </div>
   </aside>
 
@@ -67,13 +69,12 @@
               <span class="code-lang">sql</span>
             </div>
             <pre><code>-- ── Core resolution query: user → function via role hierarchy
-
 <span class="kw">CREATE OR REPLACE PROCEDURE</span> prc_run_sensitive_access (p_run_id <span class="kw">IN VARCHAR2</span>) <span class="kw">AS</span>
 <span class="kw">BEGIN</span>
     -- Step 1: Ensure hierarchy is fresh
     <span class="fn">prc_flatten_role_hierarchy</span>();
 
-    -- Step 2: Resolve user → sensitive function through full hierarchy
+    -- Step 2: Resolve user -> sensitive function through full hierarchy and privileges
     <span class="kw">INSERT INTO</span> sod_sensitive_access_results (
         run_id, function_id, function_code,
         user_id, username, granting_role_code,
@@ -85,23 +86,25 @@
         sf.function_code,
         u.user_id,
         u.username,
-        ur.role_id                       <span class="kw">AS</span> granting_role_code,
-        <span class="str">'User:'</span> || u.username
-            || rhf.path                  <span class="kw">AS</span> access_path,
-        rhf.depth                        <span class="kw">AS</span> path_depth,
+        (SELECT role_common_name FROM ase_role_b WHERE role_id = ur.role_id) AS granting_role_code,
+        'User:' || u.username || ' > ' || rhf.path || ' > ' || p.privilege_code AS access_path,
+        rhf.depth + 1                    AS path_depth,
         sf.risk_level,
-        <span class="str">'Y'</span>                              <span class="kw">AS</span> is_new  -- refined in step 3
+        'Y'                              AS is_new
     <span class="kw">FROM</span>
-        sod_users                     u
-        <span class="kw">JOIN</span> sod_user_roles           ur  <span class="kw">ON</span> ur.user_id  = u.user_id
-        <span class="kw">JOIN</span> sod_role_hierarchy_flat  rhf <span class="kw">ON</span> rhf.ancestor_id = ur.role_id
-        <span class="kw">JOIN</span> sod_sensitive_function_privs sfp <span class="kw">ON</span> sfp.role_code = (
-            <span class="kw">SELECT</span> role_code <span class="kw">FROM</span> sod_roles <span class="kw">WHERE</span> role_id = rhf.role_id
-        )
+        per_users                     u
+        <span class="kw">JOIN</span> per_user_roles           ur  <span class="kw">ON</span> ur.user_id  = u.user_id
+        <span class="kw">JOIN</span> ase_role_hierarchy_flat  rhf <span class="kw">ON</span> rhf.ancestor_id = ur.role_id
+        <span class="kw">JOIN</span> ase_priv_role_mbr        prm <span class="kw">ON</span> prm.role_id = rhf.role_id
+        <span class="kw">JOIN</span> ase_privilege_b          p   <span class="kw">ON</span> p.privilege_id = prm.privilege_id
+        <span class="kw">JOIN</span> sod_sensitive_function_privs sfp <span class="kw">ON</span> sfp.privilege_code = p.privilege_code
         <span class="kw">JOIN</span> sod_sensitive_functions  sf  <span class="kw">ON</span> sf.function_id = sfp.function_id
     <span class="kw">WHERE</span>
-        u.is_active = <span class="str">'Y'</span>
-        <span class="kw">AND</span> sf.is_active = <span class="str">'Y'</span>;
+        u.active_flag = 'Y'
+        AND sf.is_active = 'Y'
+        AND ur.active_flag = 'Y'
+        AND prm.active_flag = 'Y'
+        AND p.active_flag = 'Y';
 
     -- Step 3: Mark records NOT present in prior run as is_new='N'
     <span class="kw">UPDATE</span> sod_sensitive_access_results r_new

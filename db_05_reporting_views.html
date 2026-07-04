@@ -102,7 +102,7 @@
     <span class="kw">CASE WHEN</span> e.expiry_date < TRUNC(<span class="kw">SYSDATE</span>) <span class="kw">THEN</span> <span class="str">'EXPIRED'</span> <span class="kw">ELSE</span> <span class="str">'VALID'</span> <span class="kw">END AS</span> exception_status,
     ar.completed_at                    <span class="kw">AS</span> run_date
 <span class="kw">FROM</span>   sod_violations        v
-<span class="kw">JOIN</span>   sod_users             u  <span class="kw">ON</span> u.user_id    = v.user_id
+<span class="kw">JOIN</span>   per_users             u  <span class="kw">ON</span> u.user_id    = v.user_id
 <span class="kw">JOIN</span>   sod_assessment_runs   ar <span class="kw">ON</span> ar.run_id    = v.run_id
 <span class="kw">LEFT JOIN</span> sod_exceptions     e  <span class="kw">ON</span> e.exception_id = v.exception_id;
 
